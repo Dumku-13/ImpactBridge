@@ -46,46 +46,52 @@ interface GalleryImage {
 }
 
 /**
- * Photographs per cause, chosen so an organisation's gallery reads as a set of
- * pictures OF ITS OWN WORK rather than as stock. Each list is four deep, which
- * is what the profile's three alternating plate shapes need to look composed.
+ * Photographs per cause.
+ *
+ * Every entry has been checked against the actual picture, and the caption is
+ * derived from what is IN it — the alt text in `apps/web/src/content/media.ts`
+ * is the source of truth for that. The first version of this table assigned
+ * four photographs to every cause to make galleries look full, which put a
+ * ration distribution and a sapling being planted on a dog-rescue's profile,
+ * captioned "Treatment, close up". A gallery that shows the wrong work is
+ * worse than a short one, on a platform whose whole argument is that what you
+ * see is real.
+ *
+ * So counts vary, honestly: the library holds exactly ONE animal photograph, so
+ * an animal charity gets one plate. `OrgGallery` is built to compose at any
+ * count.
+ *
+ * `detail-closeup.jpg` is never used — it is two photographs in one file. The
+ * media pipeline splits it into `detail-writing` and `detail-planting`.
  */
 const GALLERY_BY_CAUSE: Record<string, GalleryImage[]> = {
   education: [
-    { file: "ngo-children.jpg", title: "A morning session at the learning centre" },
-    { file: "cause-education.jpg", title: "Class held outdoors during the dry season" },
-    { file: "detail-classroom-desk.jpg", title: "Exercise books, mid-term" },
-    { file: "children.jpg", title: "Students at the end of a teaching day" },
+    { file: "ngo-children.jpg", title: "Students at the learning centre" },
+    { file: "cause-education.jpg", title: "A class held in the open air" },
+    { file: "detail-writing.jpg", title: "Classwork, mid-lesson" },
+    { file: "detail-classroom-desk.jpg", title: "A desk and an exercise book" },
+    { file: "children.jpg", title: "The end of a teaching day" },
   ],
   healthcare: [
-    { file: "cause-healthcare.jpg", title: "A health worker on a household visit" },
-    { file: "ngo-community.jpg", title: "Field team meeting the community" },
-    { file: "detail-closeup.jpg", title: "Hands at work during a routine check" },
-    { file: "detail-documents.jpg", title: "Case records kept for every visit" },
+    { file: "cause-healthcare.jpg", title: "A health worker with a patient" },
   ],
   "women-empowerment": [
-    { file: "cause-women-empowerment.jpg", title: "The collective, meeting weekly" },
-    { file: "detail-fabric.jpg", title: "Hand-woven cloth from the workshop" },
-    { file: "ngo-community.jpg", title: "Members and field staff together" },
-    { file: "detail-closeup.jpg", title: "Detail of work in progress" },
+    { file: "cause-women-empowerment.jpg", title: "The tailoring collective at work" },
+    { file: "detail-fabric.jpg", title: "Cloth woven by members" },
   ],
   animals: [
-    { file: "cause-animals.jpg", title: "Veterinary care for a working animal" },
-    { file: "ngo-community.jpg", title: "The team on an outreach round" },
-    { file: "detail-closeup.jpg", title: "Treatment, close up" },
-    { file: "texture-building.jpg", title: "The shelter wall, rebuilt this year" },
+    { file: "cause-animals.jpg", title: "Veterinary care, on the table" },
   ],
   "disaster-relief": [
-    { file: "cause-disaster-relief.jpg", title: "Relief supplies reaching a village" },
-    { file: "detail-maps.jpg", title: "Planning the distribution route" },
-    { file: "ngo-community.jpg", title: "Briefing the response team" },
-    { file: "texture-building.jpg", title: "A damaged wall awaiting repair" },
+    { file: "cause-disaster-relief.jpg", title: "After the water went down" },
+    { file: "ngo-community.jpg", title: "Rations reaching a village" },
+    { file: "detail-maps.jpg", title: "Planning the distribution by hand" },
   ],
   environment: [
-    { file: "cause-environment.jpg", title: "Restored land back under cultivation" },
-    { file: "forest-restoration.jpg", title: "The replanted slope, four seasons on" },
-    { file: "forest-restoration-2.jpg", title: "Saplings raised in the nursery" },
-    { file: "detail-maps.jpg", title: "Mapping the catchment by hand" },
+    { file: "cause-environment.jpg", title: "Land back under cultivation" },
+    { file: "forest-restoration.jpg", title: "The replanted slope" },
+    { file: "detail-planting.jpg", title: "A sapling going into the ground" },
+    { file: "forest-restoration-2.jpg", title: "Saplings raised for the next season" },
   ],
 };
 

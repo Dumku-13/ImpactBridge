@@ -102,8 +102,8 @@ const PORTRAIT_MAX = storyMaxWidth.portrait; // 222
  * arriving as it exits. The dead margins at both ends are what makes the travel
  * feel like it belongs to the section rather than to the whole page.
  */
-const TRAVEL_START = 0.12;
-const TRAVEL_END = 0.88;
+const TRAVEL_START = 0.06;
+const TRAVEL_END = 0.94;
 
 /**
  * How long a manual interaction owns the rail before scroll-driving resumes.
@@ -123,7 +123,7 @@ function StoryCard({
 }) {
   return (
     <article
-      className="group snap-start shrink-0"
+      className="group shrink-0"
       style={{ width: `min(${WIDE_MAX}px, 78vw)` }}
     >
       <div className="relative">
@@ -293,7 +293,15 @@ export function StoryRail() {
         aria-label="Impact stories"
         tabIndex={0}
         className={cn(
-          "mt-14 flex snap-x snap-mandatory gap-8 overflow-x-auto pb-6 sm:gap-12",
+          /*
+           * NO scroll-snap. `snap-mandatory` and a scroll-driven rail are
+           * incompatible: the driver writes `scrollLeft` continuously, and
+           * mandatory snapping re-targets the nearest snap point after every
+           * write, so the rail resists the page and either sticks on a card or
+           * jitters between two. Snapping is for a rail a thumb flicks; this
+           * one is driven by the page scrollbar, which is already smooth.
+           */
+          "mt-14 flex gap-8 overflow-x-auto pb-6 sm:gap-12",
           // Matches `max-w-7xl` + `px-6` at wide viewports so the first card
           // sits under the headline rather than at the raw window edge.
           "pl-6 pr-6 [scrollbar-width:thin] xl:pl-[max(1.5rem,calc((100vw-80rem)/2+1.5rem))]",

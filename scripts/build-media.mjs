@@ -629,6 +629,47 @@ function buildStills() {
     }
   }
 
+  /*
+   * `close up deatil pic.png` is not one photograph — it is TWO butted together
+   * with a hairline seam down the centre: a hand writing in an exercise book,
+   * and hands planting a sapling. Rendered whole it reads as a layout bug, and
+   * it shipped that way into an organisation's gallery captioned as a single
+   * image. Split it here so both halves are usable on their own; the composite
+   * is still written for anyone who wants it, but nothing should render it.
+   */
+  const composite = path.join(OUT.stills, 'detail-closeup.jpg');
+
+  if (existsSync(composite)) {
+    const { width, height } = ffprobeDims(composite);
+    const half = Math.floor(width / 2) - 2;
+
+    for (const [outName, x] of [
+      ['detail-writing.jpg', 0],
+      ['detail-planting.jpg', Math.ceil(width / 2) + 2],
+    ]) {
+      const outPath = path.join(OUT.stills, outName);
+
+      if (!FORCE && existsSync(outPath)) {
+        const dims = ffprobeDims(outPath);
+        results.push({ file: outName, width: dims.width, height: dims.height });
+        log(`  ${outName}: already exists — skipping`);
+        continue;
+      }
+
+      try {
+        ffmpeg(['-i', composite, '-vf', `crop=${half}:${height}:${x}:0`, '-q:v', String(qscale), outPath]);
+        const dims = ffprobeDims(outPath);
+        results.push({ file: outName, width: dims.width, height: dims.height });
+        log(`  detail-closeup.jpg -> ${outName} (${dims.width}x${dims.height}, ${kb(fileSize(outPath))})`);
+      } catch (err) {
+        log(`  FAILED split -> ${outName}: ${err.message.split('
+')[0]} — skipping.`);
+        failures.push({ src: 'detail-closeup.jpg', out: outName, reason: err.message.split('
+')[0] });
+      }
+    }
+  }
+
   return { results, failures };
 }
 

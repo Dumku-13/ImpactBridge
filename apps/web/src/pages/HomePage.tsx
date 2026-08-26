@@ -50,18 +50,18 @@ export function HomePage() {
       <header className="absolute inset-x-0 top-0 z-30">
         <nav className="mx-auto flex h-20 max-w-7xl items-center px-6">
           <span
-            className="font-grotesk text-lg font-extrabold uppercase tracking-[0.02em] text-[hsl(40_24%_96%)]"
+            className="font-grotesk text-lg font-extrabold uppercase tracking-[0.02em] text-[hsl(var(--paper))]"
             style={{ fontStretch: "88%" }}
           >
-            Impact<span className="text-[hsl(36_92%_62%)]">Bridge</span>
+            Impact<span className="text-accent">Bridge</span>
           </span>
 
           <div className="ml-auto flex items-center gap-3">
-            <ThemeToggle className="text-[hsl(40_24%_96%/0.75)] hover:bg-[hsl(40_24%_96%/0.12)] hover:text-[hsl(40_24%_96%)]" />
+            <ThemeToggle className="text-[hsl(40_24%_96%/0.75)] hover:bg-[hsl(40_24%_96%/0.12)] hover:text-[hsl(var(--paper))]" />
             {user ? (
               <Link
                 to={homeForRole(user.role)}
-                className="inline-flex h-10 items-center gap-2 rounded-lg bg-[hsl(40_24%_96%)] px-4 text-sm font-semibold text-[hsl(200_36%_7%)] transition-all duration-200 ease-out-soft active:scale-[0.97]"
+                className="inline-flex h-10 items-center gap-2 rounded-lg bg-[hsl(var(--paper))] px-4 text-sm font-semibold text-[hsl(var(--ink))] transition-all duration-200 ease-out-soft active:scale-[0.97]"
               >
                 Go to {ROLE_LABELS[user.role].toLowerCase()} dashboard
                 <ArrowRight className="h-4 w-4" />
@@ -70,13 +70,13 @@ export function HomePage() {
               <>
                 <Link
                   to="/login"
-                  className="inline-flex h-10 items-center rounded-lg px-4 text-sm font-semibold text-[hsl(40_24%_96%/0.85)] transition-colors hover:bg-[hsl(40_24%_96%/0.12)] hover:text-[hsl(40_24%_96%)]"
+                  className="inline-flex h-10 items-center rounded-lg px-4 text-sm font-semibold text-[hsl(40_24%_96%/0.85)] transition-colors hover:bg-[hsl(40_24%_96%/0.12)] hover:text-[hsl(var(--paper))]"
                 >
                   Sign in
                 </Link>
                 <Link
                   to="/signup"
-                  className="inline-flex h-10 items-center rounded-lg bg-[hsl(40_24%_96%)] px-4 text-sm font-semibold text-[hsl(200_36%_7%)] transition-all duration-200 ease-out-soft active:scale-[0.97]"
+                  className="inline-flex h-10 items-center rounded-lg bg-[hsl(var(--paper))] px-4 text-sm font-semibold text-[hsl(var(--ink))] transition-all duration-200 ease-out-soft active:scale-[0.97]"
                 >
                   Get started
                 </Link>

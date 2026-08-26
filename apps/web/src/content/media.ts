@@ -22,7 +22,18 @@ export interface MediaAsset {
   focalPoint?: string;
 }
 
-/** The scroll-scrubbed hero sequence. */
+/**
+ * The scroll-scrubbed hero sequence.
+ *
+ * NOT USED BY ANY COMPONENT, and kept deliberately. The 100 frames are built,
+ * committed and ~3.4 MB; the sequence was dropped because scrubbing a person
+ * walking spent enormous scroll distance saying nothing, and the poster was
+ * dropped later because a face behind a headline fights the type (HANDOFF
+ * §3.5) and read as stock against the site's documentary photography.
+ *
+ * If a future hero wants a scrubbed sequence, this is the address for it.
+ * Delete the frames from the pipeline if that stops being true.
+ */
 export const heroSequence = {
   count: 100,
   width: 1126,
@@ -84,7 +95,6 @@ export const editorial = {
   ngoCommunity: still("ngo-community.jpg", "Fieldworkers meeting a community", 1200),
   children: still("children.jpg", "Children at a learning centre", 1024),
   forestRestoration: still("forest-restoration.jpg", "Replanted forest", 1080),
-  closeup: still("detail-closeup.jpg", "Hands at work", 1536),
 } as const;
 
 /** Small texture and detail shots — insets and accents only, never full-bleed. */
@@ -95,6 +105,14 @@ export const details = {
   maps: still("detail-maps.jpg", "A field map", 700),
   building: still("texture-building.jpg", "Weathered wall texture", 414),
   forestRestoration2: still("forest-restoration-2.jpg", "Saplings", 640),
+  /*
+   * `detail-closeup.jpg` is deliberately absent: it is TWO photographs butted
+   * together with a seam down the middle, and rendering it whole looks like a
+   * broken layout — which is exactly how it shipped into an organisation's
+   * gallery once. `scripts/build-media.mjs` splits it; use the halves.
+   */
+  writing: still("detail-writing.jpg", "A hand writing in an exercise book", 766),
+  planting: still("detail-planting.jpg", "Hands planting a sapling in dark soil", 766),
 } as const;
 
 /**

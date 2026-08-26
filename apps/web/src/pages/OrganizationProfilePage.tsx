@@ -164,6 +164,75 @@ export function OrganizationProfilePage() {
 
           <VerificationPanel verified={org.verified} verifiedAt={org.verifiedAt} />
 
+          {/*
+            At a glance.
+            
+            The column ended after the verification panel, which left the right
+            half of a tall page empty from about the first scroll onward — the
+            profile read as unfinished. Everything here is a field already on
+            the wire; it is the record's own index, not filler, and it answers
+            the questions a donor asks before giving (who are they, where, how
+            long, how many others have) without scrolling back up.
+          */}
+          <dl className="border-t border-border pt-4 text-sm">
+            {[
+              {
+                label: "Causes",
+                value: org.categories.map((c) => c.name).join(", ") || null,
+              },
+              {
+                label: "Based in",
+                value: org.city
+                  ? `${org.city}${org.state ? `, ${org.state}` : ""}`
+                  : null,
+              },
+              {
+                label: "Working since",
+                value: org.foundedYear ? String(org.foundedYear) : null,
+              },
+              {
+                label: "On ImpactBridge",
+                value: `since ${new Date(org.createdAt).toLocaleDateString("en-IN", {
+                  month: "long",
+                  year: "numeric",
+                })}`,
+              },
+              {
+                label: "Donors",
+                value: org.donorCount.toLocaleString("en-IN"),
+              },
+              {
+                label: "Verified",
+                value:
+                  org.verified && org.verifiedAt
+                    ? new Date(org.verifiedAt).toLocaleDateString("en-IN", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })
+                    : org.verified
+                      ? "Yes"
+                      : null,
+              },
+            ]
+              /* A row with nothing in it is worse than no row — an NGO that
+                 hasn't set a founding year shouldn't get a blank line. */
+              .filter((row) => row.value)
+              .map((row) => (
+                <div
+                  key={row.label}
+                  className="flex items-baseline justify-between gap-4 border-b border-border py-2.5 last:border-b-0"
+                >
+                  <dt className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                    {row.label}
+                  </dt>
+                  <dd className="tnum text-right text-sm text-foreground">
+                    {row.value}
+                  </dd>
+                </div>
+              ))}
+          </dl>
+
           {isDonor && (
             <div className="flex gap-2">
               <Button

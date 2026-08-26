@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { gsap, prefersReducedMotion } from "@/lib/gsap";
 import { cn } from "@/lib/utils";
 
@@ -9,13 +9,23 @@ interface GalleryImage {
 }
 
 /**
- * The organisation's own photographs, read as a spread rather than a grid.
+ * The organisation's own photographs, as a filled mosaic.
  *
- * These images arrive from Cloudinary at whatever dimensions the nonprofit
- * uploaded, so every plate is a fixed aspect-ratio box with `object-cover` — a
- * portrait photograph landing among landscapes cannot be allowed to shove the
- * composition sideways. The three shapes below rotate, which is what stops six
- * unrelated snapshots reading as a contact sheet.
+ * The first version laid one plate per row at 42–64% of the column, alternating
+ * sides. On paper that is an editorial spread; on screen, next to a short
+ * sticky sidebar, it left the page looking like it had failed to load — a
+ * narrow ribbon of pictures down the middle with dead space either side. This
+ * fills the column instead: a two-column mosaic where the lead plate spans the
+ * full width and the rest pair off, so the section reads as a body of work
+ * rather than a list of files.
+ *
+ * The count is not fixed. An organisation may publish one photograph or a
+ * dozen, so the layout is built to look composed at ANY count — see
+ * `spanFor` below — rather than assuming the four that happened to be seeded.
+ *
+ * Images arrive from Cloudinary at whatever dimensions the nonprofit uploaded,
+ * so every plate is a fixed aspect-ratio box with `object-cover`: a portrait
+ * photograph landing among landscapes cannot shove the composition sideways.
  *
  * IMPORTANT: this array is already double-filtered server-side on `isPublic`
  * AND `type: GALLERY_IMAGE`. Registration certificates and audited accounts
@@ -28,6 +38,21 @@ interface GalleryImage {
 export function OrgGallery({ images }: { images: GalleryImage[] }) {
   const rootRef = useRef<HTMLDivElement>(null);
 
+  /**
+   * Images that turned out to be too small for the slot they were given.
+   *
+   * The span pattern below is decided by position, but whether a photograph can
+   * FILL that span depends on its pixel width — and nothing knows that until it
+   * loads. These arrive from Cloudinary at whatever size the nonprofit
+   * uploaded, so this is the real case, not a seed-data quirk: someone
+   * uploading a 600px photo should not have it stretched across a 696px column.
+   *
+   * Set once and never cleared. Demoting makes the plate narrower, which would
+   * make the measurement pass on the next render and re-promote it — a loop
+   * that flickers forever.
+   */
+  const [tooSmallForWide, setTooSmallForWide] = useState<Record<string, true>>({});
+
   useEffect(() => {
     const root = rootRef.current;
     if (!root || prefersReducedMotion()) return;
@@ -39,9 +64,9 @@ export function OrgGallery({ images }: { images: GalleryImage[] }) {
 
         gsap.fromTo(
           img,
-          { yPercent: i % 2 === 0 ? -5 : -8 },
+          { yPercent: i % 2 === 0 ? -4 : -6 },
           {
-            yPercent: i % 2 === 0 ? 5 : 8,
+            yPercent: i % 2 === 0 ? 4 : 6,
             ease: "none",
             scrollTrigger: {
               trigger: plate,
@@ -59,51 +84,86 @@ export function OrgGallery({ images }: { images: GalleryImage[] }) {
 
   if (images.length === 0) return null;
 
-  /*
-   * Widths and offsets cycle in threes so no two neighbours share a shape.
+  /**
+   * Which plates run full width.
    *
-   * The widths are also a resolution budget. In a ~820px main column these cap
-   * the largest plate at roughly 530 CSS px, which is about where the smallest
-   * photographs in the library still hold up — an NGO uploading a 600px image
-   * would otherwise be rendered at 640px and look soft, and this project has
-   * already learned once (the hero sequence) that upscaling invents pixels
-   * nobody asked for.
+   * The lead always does. After that, a full-width plate every fourth item
+   * breaks up the pairs, and a trailing odd plate is widened rather than left
+   * as a lone half with a hole beside it — the hole being the entire problem
+   * this layout was rewritten to solve.
+   *
+   * EXCEPT when there is only one photograph. A single full-width plate is
+   * 696px in this column, and the library's smallest cause image is 480px wide
+   * — the one an animal charity gets, since it is the only animal photograph
+   * that exists. Blowing a 480px source up to 696px to fill a row trades one
+   * ugly problem for another. A lone image stays at half width and its caption
+   * takes the other half, which fills the row with something true instead.
    */
-  const SHAPES = [
-    { frame: "aspect-[16/10]", width: "sm:w-[64%]", align: "sm:mr-auto" },
-    { frame: "aspect-[4/5]", width: "sm:w-[42%]", align: "sm:ml-auto" },
-    { frame: "aspect-[3/2]", width: "sm:w-[54%]", align: "sm:ml-[16%]" },
-  ] as const;
+  const single = images.length === 1;
+
+  const spanFor = (index: number, total: number) => {
+    if (single) return false;
+    if (index === 0) return true;
+    if (index === total - 1 && (total - 1) % 2 === 1) return true;
+    return index % 4 === 3;
+  };
 
   return (
-    <div ref={rootRef} className="flex flex-col gap-12 sm:gap-16">
+    <div ref={rootRef} className="grid grid-cols-2 gap-4 sm:gap-5">
       {images.map((image, i) => {
-        const shape = SHAPES[i % SHAPES.length]!;
+        const wide = spanFor(i, images.length) && !tooSmallForWide[image.id];
+        /* A caption that is just a filename is noise, not information. */
+        const caption =
+          image.title && !/\.(jpe?g|png|webp|gif|avif)$/i.test(image.title)
+            ? image.title
+            : null;
 
         return (
           <figure
             key={image.id}
-            className={cn("w-full", shape.width, shape.align)}
+            className={cn("min-w-0", wide && "col-span-2", single && "relative")}
           >
             <div
               className={cn(
                 "og-plate overflow-hidden bg-secondary",
-                shape.frame,
+                /* Wide plates get a landscape frame, paired plates a squarer
+                   one — a 16/10 crop at half width is a letterbox slit. */
+                wide ? "aspect-[16/9]" : "aspect-[4/3]",
               )}
             >
               <img
                 src={image.url}
                 alt={image.title}
                 loading={i === 0 ? "eager" : "lazy"}
-                className="h-[112%] w-full object-cover"
+                onLoad={(event) => {
+                  const img = event.currentTarget;
+                  const rendered = img.getBoundingClientRect().width;
+                  if (!wide || !img.naturalWidth || !rendered) return;
+                  // A 2% tolerance: fractional layout widths shouldn't demote a
+                  // photograph that is effectively the right size.
+                  if (img.naturalWidth < rendered * 0.98) {
+                    setTooSmallForWide((prev) =>
+                      prev[image.id] ? prev : { ...prev, [image.id]: true },
+                    );
+                  }
+                }}
+                className="h-[110%] w-full object-cover"
               />
             </div>
-            {/* The nonprofit titles its own uploads; when the title is just the
-                filename it is noise, so anything that looks like one is
-                dropped rather than printed as a caption. */}
-            {image.title && !/\.(jpe?g|png|webp|gif|avif)$/i.test(image.title) && (
-              <figcaption className="mt-3 text-xs leading-relaxed text-muted-foreground">
-                {image.title}
+            {caption && !single && (
+              <figcaption className="mt-2.5 text-xs leading-relaxed text-muted-foreground">
+                {caption}
+              </figcaption>
+            )}
+
+            {/* The lone-image case: caption set beside the plate, at reading
+                size, so the second column carries weight rather than air. */}
+            {caption && single && (
+              <figcaption
+                className="absolute left-[calc(50%+0.625rem)] top-0 max-w-[16rem] font-display text-lg leading-snug text-muted-foreground"
+                style={{ fontVariationSettings: '"SOFT" 12' }}
+              >
+                {caption}
               </figcaption>
             )}
           </figure>
