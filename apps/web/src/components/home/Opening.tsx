@@ -186,7 +186,14 @@ export function Opening() {
          (HANDOFF §3.3). 3.4 screens is the explode distance — the F1 dashboard
          spends three on its car, and the length is load-bearing for the same
          reason: too short and it never finishes coming apart. */
-      className="relative h-[340svh] bg-[hsl(var(--ink))] text-[hsl(var(--paper))]"
+      /*
+       * `min-h`, NOT `h`. With a fixed height the foreground — one empty screen,
+       * three figures at 80svh each and the buttons — added up taller than the
+       * zone, and the last block hung out of the bottom and landed on top of
+       * the section below it. A zone whose height is a constant while its
+       * content is not is a bug waiting for a longer sentence.
+       */
+      className="relative min-h-[340svh] bg-[hsl(var(--ink))] text-[hsl(var(--paper))]"
     >
       {/* ── Background: the headline, exploding ─────────────────────────── */}
       {/*
