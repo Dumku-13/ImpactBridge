@@ -96,12 +96,12 @@ const ORGANISATIONS: DemoOrg[] = [
      */
     mission: "Education for rural girls in Karnataka",
     description:
-      "Vidya Jyoti runs after-school learning centres in low-income neighbourhoods of Pune, where most of our students are the first in their family to attend school. We combine daily academic support with a monthly stipend that offsets the income a child would otherwise earn, which is the single biggest reason families pull students out early. Every centre is staffed by teachers hired from the same community.",
+      "Vidya Jyoti runs after-school learning centres in villages across Kalaburagi and Yadgir districts of north Karnataka, where most of our students are the first in their family to attend school. We combine daily academic support with a monthly stipend that offsets the income a child would otherwise earn, which is the single biggest reason families pull students out early. Every centre is staffed by teachers hired from the same community.",
     categories: ["education"],
-    city: "Pune",
-    state: "Maharashtra",
-    latitude: 18.5204,
-    longitude: 73.8567,
+    city: "Kalaburagi",
+    state: "Karnataka",
+    latitude: 17.3297,
+    longitude: 76.8343,
     foundedYear: 2014,
     website: "https://example.org/vidya-jyoti",
     fundingGoal: rupees(2_500_000),
