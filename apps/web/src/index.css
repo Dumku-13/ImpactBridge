@@ -1,0 +1,316 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Design tokens as CSS variables (shadcn/ui convention).
+ * Every colour is defined once here for light and dark; Tailwind classes like
+ * `bg-background` / `text-primary` resolve through these. Changing the brand
+ * later means editing this block only.
+ *
+ * Direction: "editorial civic" — warm paper, ink serif headlines, teal for
+ * trust and amber for money. This is a platform about public good and other
+ * people's donations; it should read like a well-made annual report, not a
+ * SaaS dashboard. Warmth is doing real work here, not decoration.
+ */
+@layer base {
+  /*
+   * `.light` carries the same tokens as `:root` so the light palette can be
+   * applied to a subtree, not just the document. That is what lets one section
+   * invert against the page (see SectionTheme) — in dark mode an inverted
+   * section needs to become light, which is impossible if light only ever
+   * exists at the root.
+   */
+  :root,
+  .light {
+    /* ── Ink · Paper · Vermilion · Marigold · Olive ──────────────────────
+     *
+     * Deliberately NOT a blue-grey/teal system. That palette is the default
+     * of every generated SaaS template and it read exactly that way: safe,
+     * corporate, anonymous. This one is warm, high-contrast and printed —
+     * closer to a documentary magazine than a dashboard.
+     *
+     * Five colours, no gradients. Vermilion is the action; marigold is money
+     * and emphasis; olive is the calm ground for dark sections. Everything
+     * else is ink on paper.
+     */
+
+    /* Warm ivory — a printed page, not a white screen */
+    --background: 39 46% 92%;
+    --foreground: 60 8% 6%;
+
+    /* Slightly lifted paper, so surfaces read without needing a border */
+    --card: 40 50% 96%;
+    --card-foreground: 60 8% 6%;
+
+    /* Vermilion — the single loud colour. Actions, links, live state. */
+    --primary: 8 86% 56%;
+    --primary-foreground: 40 50% 97%;
+
+    --secondary: 38 32% 87%;
+    --secondary-foreground: 60 8% 6%;
+
+    --muted: 38 32% 87%;
+    --muted-foreground: 40 8% 34%;
+
+    /* Marigold — money, emphasis, highlight. Never chrome. */
+    --accent: 39 87% 55%;
+    --accent-foreground: 60 8% 6%;
+
+    /* Deeper and browner than vermilion so danger never reads as brand */
+    --destructive: 358 62% 40%;
+    --destructive-foreground: 40 50% 97%;
+
+    --border: 38 24% 80%;
+    --input: 38 24% 80%;
+    --ring: 8 86% 56%;
+
+    /*
+     * THEME-INDEPENDENT constants.
+     *
+     * `--background` / `--foreground` swap with the theme, which is correct for
+     * UI but wrong for an art-directed section that is always meant to be ink
+     * with paper type. Using the semantic tokens there inverted the Browse hero
+     * in dark mode — light ground, dark text, and the footage bleached to a
+     * ghost. These two never flip.
+     */
+    --ink: 60 8% 6%;
+    --paper: 39 46% 92%;
+
+    /* Deep olive — the ground for inverted sections */
+    --olive: 132 18% 18%;
+
+    --radius: 0.75rem;
+
+    /*
+     * Shadows tinted with the ink hue rather than neutral black. Black on warm
+     * paper reads as a grey smudge; a warm shadow looks like light falling
+     * through the page.
+     */
+    --shadow-tint: 30 30% 10%;
+
+    /* Motion. One place to retune the feel of the entire app. */
+    --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .dark {
+    /* Ink ground. Warm-black, not blue-black — it has to sit against paper. */
+    --background: 60 8% 6%;
+    --foreground: 39 46% 92%;
+
+    --card: 48 6% 10%;
+    --card-foreground: 39 46% 92%;
+
+    /* Vermilion lifts slightly on ink to hold the same presence */
+    --primary: 10 88% 60%;
+    --primary-foreground: 60 8% 6%;
+
+    --secondary: 48 6% 16%;
+    --secondary-foreground: 39 46% 92%;
+
+    --muted: 48 6% 16%;
+    --muted-foreground: 40 10% 66%;
+
+    --accent: 39 90% 60%;
+    --accent-foreground: 60 8% 6%;
+
+    --destructive: 358 66% 52%;
+    --destructive-foreground: 39 46% 92%;
+
+    --border: 45 6% 22%;
+    --input: 45 6% 22%;
+    --ring: 10 88% 60%;
+
+    --olive: 132 20% 24%;
+
+    --shadow-tint: 30 40% 2%;
+  }
+
+  /*
+   * Lets full-bleed sections break out of padded containers without pushing the
+   * page sideways. `100vw` includes the scrollbar, so a `w-screen` breakout is
+   * always a scrollbar's width too wide — this clips that overhang.
+   *
+   * `clip` rather than `hidden`: `overflow-x: hidden` silently creates a scroll
+   * container, which breaks every `position: sticky` element on the page. Clip
+   * does not.
+   */
+  html,
+  body {
+    overflow-x: clip;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family:
+      "Manrope Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+      sans-serif;
+    /* Slightly tighter than default: Manrope sets a touch wide at UI sizes. */
+    letter-spacing: -0.011em;
+  }
+
+  /*
+   * Headings carry the personality. Fraunces' SOFT axis rounds the terminals,
+   * which is what keeps a serif this dark from feeling severe.
+   */
+  h1,
+  h2,
+  h3 {
+    font-family: "Fraunces Variable", ui-serif, Georgia, serif;
+    font-variation-settings: "SOFT" 40;
+    letter-spacing: -0.02em;
+  }
+
+  /*
+   * Money and dates line up in columns. Proportional digits make a table of
+   * donations look ragged even when the numbers are right.
+   */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* A visible, branded focus ring everywhere — accessibility as a default. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  ::selection {
+    background-color: hsl(var(--primary) / 0.18);
+  }
+
+  /*
+   * Entrance for list rows.
+   *
+   * The `from` state is deliberately NOT `opacity: 0`. An animation that has
+   * been created but is not advancing — a stalled frame loop, a throttled
+   * background tab — paints and holds its first keyframe. With a zero-opacity
+   * start that means the row is simply invisible, which is exactly the bug this
+   * page shipped twice: filtering by cause left every grant blank.
+   *
+   * Starting at 0.3 keeps the worst case "briefly dim" instead of "gone", while
+   * still reading as a fade once frames are actually running. No fill-mode, so
+   * the resting state is always the element's natural one.
+   */
+  .row-enter {
+    animation: row-enter 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  @keyframes row-enter {
+    from {
+      opacity: 0.3;
+      transform: translateY(34px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* Scrollbars that belong to the palette rather than the operating system. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--border));
+    border: 3px solid transparent;
+    background-clip: content-box;
+    border-radius: 9999px;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground) / 0.5);
+  }
+}
+
+@layer components {
+  /*
+   * Paper grain. A single fixed SVG noise layer over the whole page at very low
+   * opacity — the difference between "flat white div" and a surface. Fixed so
+   * it never scrolls with content, and inert so it can't eat clicks.
+   */
+  .grain::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    pointer-events: none;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /*
+   * The wash behind hero sections: two off-centre radial tints, teal and amber,
+   * bleeding into the paper. Atmosphere without an image to download.
+   */
+  .aurora {
+    background-image:
+      radial-gradient(
+        60rem 30rem at 15% -10%,
+        hsl(var(--primary) / 0.13),
+        transparent 60%
+      ),
+      radial-gradient(
+        40rem 24rem at 95% 8%,
+        hsl(var(--accent) / 0.11),
+        transparent 62%
+      );
+  }
+
+  /*
+   * Hairline grid, used behind the hero. Masked so it dissolves toward the
+   * bottom rather than stopping at a hard edge.
+   */
+  .blueprint {
+    background-image:
+      linear-gradient(hsl(var(--foreground) / 0.045) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--foreground) / 0.045) 1px, transparent 1px);
+    background-size: 3.5rem 3.5rem;
+    -webkit-mask-image: linear-gradient(to bottom, black, transparent 75%);
+    mask-image: linear-gradient(to bottom, black, transparent 75%);
+  }
+}
+
+@layer utilities {
+  /*
+   * Entrance stagger. Children animate in sequence rather than all at once,
+   * which is what makes a list of cards feel composed instead of thrown at the
+   * screen. Capped at 8 — past that the last item arrives late enough to feel
+   * broken rather than choreographed.
+   */
+  .stagger > * {
+    animation: fade-up 0.5s var(--ease-out-soft) both;
+  }
+  .stagger > *:nth-child(1) { animation-delay: 0.02s; }
+  .stagger > *:nth-child(2) { animation-delay: 0.06s; }
+  .stagger > *:nth-child(3) { animation-delay: 0.1s; }
+  .stagger > *:nth-child(4) { animation-delay: 0.14s; }
+  .stagger > *:nth-child(5) { animation-delay: 0.18s; }
+  .stagger > *:nth-child(6) { animation-delay: 0.22s; }
+  .stagger > *:nth-child(7) { animation-delay: 0.26s; }
+  .stagger > *:nth-child(n + 8) { animation-delay: 0.3s; }
+}
+
+/*
+ * Honour the OS "reduce motion" setting. Vestibular disorders make sliding and
+ * scaling genuinely unpleasant, so everything collapses to an instant state
+ * change — the interface still works, it just stops moving.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

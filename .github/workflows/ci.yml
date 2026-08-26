@@ -1,0 +1,100 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Dummy secrets shared by every job that imports apps/api code. `env.ts` validates
+# these with Zod at import time and calls process.exit(1) if they're missing or the
+# JWT secrets are under 32 chars — so CI needs *something* here even though nothing
+# ever talks to a real database or payment gateway. DATABASE_URL is set per-job
+# because the build/typecheck job doesn't need a live Postgres, only a syntactically
+# valid connection string for the schema import to resolve.
+env:
+  JWT_ACCESS_SECRET: "ci-dummy-access-secret-please-do-not-use-1234"
+  JWT_REFRESH_SECRET: "ci-dummy-refresh-secret-please-do-not-use-5678"
+
+jobs:
+  build-and-test:
+    name: Typecheck, test, build
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: "postgresql://impactbridge:impactbridge@localhost:5432/impactbridge?schema=public"
+    steps:
+      - uses: actions/checkout@v4
+
+      # pnpm must be on PATH before setup-node's cache: pnpm option can shell out to it.
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.20.0 # matches "packageManager" in root package.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24' # LTS baseline; engines allows >=20, local dev uses 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # The Prisma client is generated into node_modules from schema.prisma and is
+      # imported all over apps/api (including files unrelated to the DB itself).
+      # Without this step, `tsc --noEmit` fails on missing/untyped `@prisma/client`
+      # exports rather than on any real type error — so generate must run before
+      # typecheck, not just before runtime use.
+      - name: Generate Prisma client
+        run: pnpm --filter @impactbridge/api prisma:generate
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      # Pure state-machine tests (46 assertions over grant status transitions) —
+      # no database or network involved, safe to run in every job that installs deps.
+      - name: Run grant workflow tests
+        run: pnpm --filter @impactbridge/api test:workflow
+
+      - name: Build
+        run: pnpm build
+
+  migrate:
+    name: Verify migrations apply cleanly
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: impactbridge
+          POSTGRES_PASSWORD: impactbridge
+          POSTGRES_DB: impactbridge
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: "postgresql://impactbridge:impactbridge@localhost:5432/impactbridge?schema=public"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.20.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # This is a separate job (rather than reusing build-and-test) specifically so
+      # migrate deploy runs against a real, empty Postgres. Several migrations in
+      # this repo were hand-written with `prisma migrate diff` instead of generated
+      # by `prisma migrate dev`, so there's real risk of an invalid or out-of-order
+      # SQL file that only surfaces when applied from scratch — a local dev DB that
+      # already has the schema would never catch that.
+      - name: Apply migrations from scratch
+        run: pnpm --filter @impactbridge/api exec prisma migrate deploy

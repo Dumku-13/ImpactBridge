@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ImpactBridge</title>
+    <meta
+      name="description"
+      content="Connecting nonprofits, donors, and funders."
+    />
+    <!--
+      Set the theme BEFORE first paint. If this ran inside React instead, a user
+      on dark would get a full-brightness flash of the light theme on every cold
+      load — the single most obvious way to make a theme toggle feel cheap.
+      Deliberately blocking and inline: it must finish before the body renders.
+      The storage key is mirrored in src/lib/theme.ts.
+    -->
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem("impactbridge-theme");
+          var dark =
+            stored === "dark" ||
+            (stored !== "light" &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches);
+          if (dark) document.documentElement.classList.add("dark");
+        } catch (e) {
+          /* Private mode can throw on localStorage — light is a fine default. */
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

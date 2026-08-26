@@ -1,0 +1,18 @@
+# Keep the build context small and secrets out of images.
+node_modules
+**/node_modules
+dist
+**/dist
+.git
+.github
+
+# Never let a real .env reach an image layer.
+.env
+**/.env
+!**/.env.example
+
+*.log
+coverage
+.vscode
+.idea
+.claude

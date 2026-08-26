@@ -1,0 +1,15 @@
+version: 2
+updates:
+  # Keeps the pnpm workspace (root + all apps/packages) on patched dependency
+  # versions without needing a human to remember to check.
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+  # Actions pinned by tag (e.g. actions/checkout@v4) still get security patches
+  # within that major version — Dependabot opens a PR when one exists.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"

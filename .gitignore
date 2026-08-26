@@ -1,0 +1,51 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# builds
+dist/
+build/
+*.tsbuildinfo
+
+# env / secrets
+.env
+.env.local
+.env.*.local
+!.env.example
+# Loose notes holding live credentials. Kept locally, never committed.
+API keys.txt
+
+# prisma
+apps/api/prisma/*.db
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# editor / os
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# testing
+coverage/
+
+# --- ImpactBridge: raw media source frames (local-only, never commit) ---
+# These folders hold the raw frame-sequence exports that
+# scripts/build-media.mjs reads as INPUT. They are hundreds of MB, are the
+# user's originals, and must never be committed. The pipeline OUTPUT
+# (apps/web/public/media/) is intentionally NOT ignored — that IS committed.
+construction video frames/
+hero video frames/
+ngo video/
+tree movin gion bg/
+water video franmmes/
+lando norris reference website frames/
+# Also a pipeline INPUT (see SRC.pictures in scripts/build-media.mjs), not an asset.
+pictures for reference and use for frontend/
+# --- end ImpactBridge raw media source frames ---
+
+# Claude Code session transcripts — tooling history, not project source.
+.claude-code-history/

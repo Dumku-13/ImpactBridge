@@ -1,0 +1,88 @@
+# Production-shaped stack: Postgres + API + web behind nginx.
+#
+# This is NOT the dev setup — `docker-compose.yml` runs only Postgres, because
+# in development the apps run on the host with hot reload. This file builds and
+# runs everything as it would ship, which is what makes it useful: it catches
+# the class of bug that only appears once the code is compiled, bundled and
+# running as a non-root user in a container.
+#
+#   docker compose -f docker-compose.prod.yml up --build
+#
+# Secrets come from the environment, never from this file. Copy .env.example to
+# .env at the repo root and fill it in, or export them in your shell.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-impactbridge}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-impactbridge}
+      POSTGRES_DB: ${POSTGRES_DB:-impactbridge}
+    volumes:
+      - impactbridge_prod_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-impactbridge}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    # Deliberately NOT published to the host. Only the API needs it, and it
+    # reaches it over the compose network — exposing 5432 publicly is how a
+    # database ends up on the internet by accident.
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        # Waits for the healthcheck, not just for the container to exist —
+        # otherwise the API races Postgres on startup and exits.
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-impactbridge}:${POSTGRES_PASSWORD:-impactbridge}@postgres:5432/${POSTGRES_DB:-impactbridge}?schema=public
+      # No defaults for these on purpose: the app refuses to boot without them,
+      # and a fallback secret in a compose file is how a dev secret reaches
+      # production.
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?set JWT_ACCESS_SECRET (min 32 chars)}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?set JWT_REFRESH_SECRET (min 32 chars)}
+      WEB_APP_URL: ${WEB_APP_URL:-http://localhost:8080}
+      API_PUBLIC_URL: ${API_PUBLIC_URL:-http://localhost:4000}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:8080}
+      # Optional integrations — absent means the feature reports itself
+      # unavailable rather than the app failing to start.
+      RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID:-}
+      RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET:-}
+      RAZORPAY_WEBHOOK_SECRET: ${RAZORPAY_WEBHOOK_SECRET:-}
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:-}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+    ports:
+      - "${API_PORT:-4000}:4000"
+    # Migrations run on start rather than in the image build: the database only
+    # exists at runtime, and applying them here means a deploy can never serve
+    # traffic against a schema the code doesn't expect.
+    command: >
+      sh -c "./node_modules/.bin/prisma migrate deploy --schema=./prisma/schema.prisma
+             && node dist/index.js"
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        # Baked in at build time — Vite inlines it into the bundle, so changing
+        # it requires a rebuild, not a restart.
+        VITE_API_URL: ${VITE_API_URL:-/api}
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "${WEB_PORT:-8080}:80"
+
+volumes:
+  impactbridge_prod_pgdata:

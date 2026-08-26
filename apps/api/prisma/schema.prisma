@@ -1,0 +1,904 @@
+// ImpactBridge database schema.
+// Models were added incrementally, one vertical slice at a time:
+//   Phase 1 → User (+ Role enum) and auth token tables
+//   Phase 2 → Organization, Category, Donation, Transaction, Bookmark, Follow
+//   Phase 3 → Document, ImpactMetric, TeamMember, ReceiptCounter
+//   Phase 4 → Grant, GrantApplication, Review, Comment, ApplicationEvent,
+//             Project, Report
+//   Phase 5 → AuditLog, Notification
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// The four platform roles. A user has exactly one.
+enum Role {
+  NGO_ADMIN
+  DONOR
+  FUNDER
+  PLATFORM_ADMIN
+}
+
+/// Account status — lets a Platform Admin suspend bad actors (Phase 5)
+/// without destroying their records.
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+model User {
+  id String @id @default(cuid())
+
+  email        String  @unique
+  /// Null for accounts created via Google OAuth — they authenticate upstream,
+  /// so there is no local password to verify.
+  passwordHash String?
+  name         String
+  avatarUrl    String?
+
+  role   Role
+  status UserStatus @default(ACTIVE)
+
+  /// Users must confirm their email before they can log in.
+  emailVerifiedAt DateTime?
+
+  /// Set when the account is linked to Google (added later in Phase 1).
+  googleId String? @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  refreshTokens          RefreshToken[]
+  emailVerificationToken EmailVerificationToken[]
+  passwordResetTokens    PasswordResetToken[]
+
+  /// An NGO_ADMIN owns exactly one organisation; other roles own none.
+  organization Organization?
+
+  donations Donation[]
+  bookmarks Bookmark[]
+  follows   Follow[]
+
+  /*
+   * Grant-side relations (Phase 4). Each needs an explicit name because User
+   * points at GrantApplication and Review more than once — Prisma can't infer
+   * which foreign key belongs to which field otherwise.
+   */
+  auditLogs         AuditLog[]         @relation("AuditActor")
+  notifications     Notification[]
+  grants            Grant[]            @relation("FunderGrants")
+  assignedReviews   GrantApplication[] @relation("AssignedReviews")
+  writtenReviews    Review[]           @relation("WrittenReviews")
+  comments          Comment[]
+  applicationEvents ApplicationEvent[]
+
+  @@index([role])
+}
+
+/// Why a refresh token stopped being valid.
+///
+/// This distinction is security-critical: only ROTATED tokens get the brief
+/// grace window that absorbs concurrent-refresh races. A token revoked because
+/// of detected theft, a logout, or a password reset must be rejected
+/// immediately — otherwise revoking a session wouldn't actually revoke it.
+enum RevokeReason {
+  ROTATED
+  LOGOUT
+  THEFT_DETECTED
+  PASSWORD_RESET
+}
+
+/// One row per active login session (per device/browser).
+///
+/// We store only a SHA-256 hash of the refresh token, never the token itself —
+/// so a leaked database still cannot be used to impersonate anyone. Keeping
+/// sessions as rows (rather than trusting a stateless JWT) is what makes
+/// "log out everywhere" and per-session revocation possible.
+model RefreshToken {
+  id           String        @id @default(cuid())
+  tokenHash    String        @unique
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt    DateTime
+  /// Set when the session is rotated, logged out, or revoked.
+  revokedAt    DateTime?
+  revokeReason RevokeReason?
+  userAgent    String?
+  createdAt    DateTime      @default(now())
+
+  @@index([userId])
+}
+
+/// Single-use token emailed to confirm ownership of an address.
+model EmailVerificationToken {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+/// Single-use token emailed for "forgot password".
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Phase 2 — Organisations, discovery, and donations
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Cause taxonomy used for browsing and filtering (Education, Healthcare, …).
+///
+/// A table rather than an enum: categories are data, not code. An admin can add
+/// "Mental Health" without a migration and a deploy, and each row carries its
+/// own display metadata.
+model Category {
+  id          String  @id @default(cuid())
+  slug        String  @unique
+  name        String
+  description String?
+  /// lucide-react icon name, so the UI stays data-driven.
+  icon        String?
+  sortOrder   Int     @default(0)
+
+  organizations Organization[]
+  grants        Grant[]
+
+  @@index([sortOrder])
+}
+
+enum OrganizationStatus {
+  /// Profile created but not yet submitted for review.
+  DRAFT
+  /// Awaiting review by a Platform Admin.
+  PENDING_REVIEW
+  /// Verified and publicly listed.
+  ACTIVE
+  /// Hidden by a Platform Admin (fraud, policy breach).
+  SUSPENDED
+}
+
+model Organization {
+  id   String @id @default(cuid())
+  /// URL-friendly identifier, so profiles live at /ngo/clean-water-trust
+  /// rather than exposing a cuid.
+  slug String @unique
+
+  name        String
+  /// One-line pitch shown on cards.
+  mission     String
+  /// Long-form story shown on the profile page.
+  description String?
+
+  /// Owning NGO_ADMIN. One organisation per admin, hence @unique.
+  ownerId String @unique
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  /// An organisation can work across several causes, and each cause has many
+  /// organisations — a genuine many-to-many. Prisma manages the join table.
+  categories Category[]
+
+  // Location — city/country for filtering, lat/lng for the map in Phase 3.
+  city      String?
+  state     String?
+  country   String  @default("India")
+  latitude  Float?
+  longitude Float?
+
+  status OrganizationStatus @default(ACTIVE)
+
+  /// Verification is stored as two fields with distinct jobs:
+  ///   `verified`   — the queryable flag used for filtering and sorting. A
+  ///                  boolean sorts cleanly, unlike a timestamp whose NULL
+  ///                  ordering differs by direction and whose exact value would
+  ///                  otherwise dominate any secondary sort key.
+  ///   `verifiedAt` — the audit trail: WHEN verification happened.
+  /// They are always written together (see verifyOrganization in Phase 5).
+  verified   Boolean   @default(false)
+  verifiedAt DateTime?
+
+  /// Denormalised rating, recalculated when reviews are added (Phase 4).
+  rating      Float @default(0)
+  ratingCount Int   @default(0)
+
+  /// Money is ALWAYS stored as an integer in the currency's minor unit
+  /// (paise for INR, cents for USD). Floats cannot represent 0.1 exactly, so
+  /// using them for currency guarantees rounding drift — never do it.
+  fundingGoalMinor Int @default(0)
+  /// Denormalised running total of SUCCEEDED donations. Kept in sync inside the
+  /// same transaction that records a donation, so it can never disagree.
+  totalRaisedMinor Int @default(0)
+  donorCount       Int @default(0)
+
+  logoUrl  String?
+  coverUrl String?
+
+  website      String?
+  contactEmail String?
+  phone        String?
+  foundedYear  Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  impactMetrics ImpactMetric[]
+  teamMembers   TeamMember[]
+  documents     Document[]
+  donations     Donation[]
+  transactions  Transaction[]
+  bookmarks     Bookmark[]
+  followers     Follow[]
+
+  grantApplications GrantApplication[]
+  projects          Project[]
+
+  @@index([status, verified])
+  @@index([country, city])
+  @@index([totalRaisedMinor])
+  @@index([createdAt])
+}
+
+/// Headline numbers an NGO displays on its profile ("12,400 meals served").
+enum DocumentType {
+  REGISTRATION_CERTIFICATE
+  PAN_CARD
+  GST_CERTIFICATE
+  ANNUAL_REPORT
+  TAX_EXEMPTION
+  GALLERY_IMAGE
+  OTHER
+}
+
+/// A file an organisation uploaded to Cloudinary — legal paperwork that the
+/// platform admin reviews during verification, plus gallery imagery.
+model Document {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  type  DocumentType
+  /// Donor-facing label, e.g. "Annual Report 2025".
+  title String
+
+  /// Cloudinary's delivery URL and the public id we need in order to DELETE the
+  /// asset later. Without the public id an orphaned file would linger in the
+  /// account forever after the row is removed.
+  url      String
+  publicId String @unique
+
+  /// Kept for display ("2.4 MB · PDF") and to spot mismatched uploads.
+  bytes    Int
+  format   String?
+  /// Cloudinary stores PDFs under the "image" resource type; we record what it
+  /// told us so deletions target the right endpoint.
+  resourceType String @default("image")
+
+  /// Legal documents are private to the NGO and platform admins; gallery images
+  /// are shown on the public profile.
+  isPublic Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([organizationId, type])
+}
+
+/// A person shown on the organisation's public profile.
+///
+/// Deliberately NOT a link to a User account: most of the people a nonprofit
+/// wants to show — founders, trustees, field leads — will never log in, and
+/// requiring an account to appear on the page would make the roster useless.
+model TeamMember {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  name  String
+  role  String
+  bio   String?
+  photoUrl String?
+  /// Cloudinary id, kept so replacing or deleting the member also removes the
+  /// image instead of orphaning it.
+  photoPublicId String?
+
+  linkedinUrl String?
+
+  sortOrder Int @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@index([organizationId, sortOrder])
+}
+
+model ImpactMetric {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  label     String
+  value     String
+  /// Optional unit or qualifier, e.g. "since 2019".
+  unit      String?
+  icon      String?
+  sortOrder Int     @default(0)
+
+  @@index([organizationId, sortOrder])
+}
+
+enum DonationStatus {
+  /// Checkout session created; the donor hasn't completed payment yet.
+  PENDING
+  /// The gateway confirmed the payment. Only these count as money.
+  SUCCEEDED
+  /// Payment failed or the card was declined.
+  FAILED
+  /// Donor abandoned the gateway checkout or the order expired.
+  CANCELLED
+  REFUNDED
+}
+
+model Donation {
+  id String @id @default(cuid())
+
+  donorId String
+  donor   User   @relation(fields: [donorId], references: [id], onDelete: Cascade)
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  /// Integer minor units — see the note on Organization.fundingGoalMinor.
+  amountMinor Int
+  currency    String @default("inr")
+
+  status DonationStatus @default(PENDING)
+
+  /// Which gateway handled this donation — "razorpay" or "mock". Stored per
+  /// donation rather than read from config, so historical rows stay accurate
+  /// after the platform switches provider.
+  provider String @default("mock")
+
+  /// Gateway identifiers, deliberately provider-neutral. The order is created
+  /// first; the payment id arrives once the donor actually pays.
+  providerOrderId   String? @unique
+  providerPaymentId String? @unique
+
+  /// Optional public message from the donor, and whether to hide their name.
+  message   String?
+  anonymous Boolean @default(false)
+
+  /// Human-readable receipt reference, e.g. "IB-2026-000042".
+  receiptNumber String? @unique
+
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  transaction Transaction?
+
+  @@index([donorId, createdAt])
+  @@index([organizationId, status])
+  @@index([status])
+}
+
+enum TransactionType {
+  DONATION
+  GRANT_ALLOCATION
+  GRANT_RELEASE
+  REFUND
+}
+
+/// Append-only ledger of every money movement on the platform.
+///
+/// Donation rows describe intent and lifecycle; Transaction rows are the
+/// financial record. Keeping them separate means analytics and admin revenue
+/// reporting read ONE table regardless of whether the money came from a
+/// donation or a grant disbursement.
+model Transaction {
+  id   String          @id @default(cuid())
+  type TransactionType
+
+  amountMinor Int
+  currency    String @default("inr")
+
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  /// One-to-one with the donation that produced it.
+  donationId String?   @unique
+  donation   Donation? @relation(fields: [donationId], references: [id], onDelete: SetNull)
+
+  description String?
+
+  createdAt DateTime @default(now())
+
+  @@index([type, createdAt])
+  @@index([organizationId, createdAt])
+}
+
+/// Private "save for later" list.
+model Bookmark {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  /// A user can bookmark an organisation at most once. Enforcing it in the
+  /// database means a double-click can never create duplicates, no matter what
+  /// the client does.
+  @@unique([userId, organizationId])
+  @@index([userId, createdAt])
+}
+
+/// Subscribing to an organisation's updates (drives notifications in Phase 6).
+model Follow {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, organizationId])
+  @@index([userId, createdAt])
+}
+
+/// Every gateway webhook event we have already handled.
+///
+/// Gateways guarantee AT-LEAST-once delivery: they retry on any non-2xx response
+/// and can legitimately send the same event twice. Without this table a retry
+/// would record the same donation twice and double an organisation's total.
+/// Inserting the event id inside the same transaction as the donation update
+/// makes handling exactly-once.
+model ProcessedWebhookEvent {
+  id          String   @id
+  type        String
+  processedAt DateTime @default(now())
+
+  @@index([processedAt])
+}
+
+/// The source of truth for receipt numbering — one row per calendar year.
+///
+/// Receipt numbers must be unique and must restart at 1 each January so the
+/// `IB-<year>-` prefix actually agrees with the sequence after it. Deriving
+/// them from `COUNT(*)` of succeeded donations does neither: two donations
+/// completing at the same moment read the same count and build the same
+/// string (one of them then loses to Donation.receiptNumber's unique index,
+/// fails its webhook, and waits for a gateway retry), and a global count never
+/// resets, so 2027 would carry on from wherever 2026 stopped.
+///
+/// A counter row fixes both. `SET lastValue = lastValue + 1` takes a row lock,
+/// so a second donation completing at the same instant waits and then reads
+/// the value we wrote — the numbers can only come out distinct and in order.
+///
+/// Deliberately NOT a Postgres SEQUENCE: sequences live outside transactions,
+/// so a rolled-back donation would still consume its number and leave a hole
+/// in what is meant to be an auditable, gapless receipt trail. Incrementing a
+/// row rolls back with everything else.
+model ReceiptCounter {
+  /// Calendar year (e.g. 2026). A natural primary key — there is exactly one
+  /// counter per year, and no surrogate id would add anything.
+  year      Int      @id
+  /// Highest number issued so far this year; the next receipt is lastValue + 1.
+  lastValue Int      @default(0)
+  updatedAt DateTime @updatedAt
+}
+
+/* ── Grants (Phase 4) ─────────────────────────────────────────────────────── */
+
+enum GrantStatus {
+  /// Being written by the funder; invisible to NGOs.
+  DRAFT
+  /// Live and accepting applications.
+  OPEN
+  /// Deadline passed or funder closed it; existing applications continue.
+  CLOSED
+  /// Every application resolved and funds allocated.
+  COMPLETED
+}
+
+/// A funding opportunity posted by a FUNDER.
+model Grant {
+  id String @id @default(cuid())
+
+  /// URL-friendly identifier, so grants live at /grants/rural-water-2026.
+  slug String @unique
+
+  funderId String
+  funder   User   @relation("FunderGrants", fields: [funderId], references: [id], onDelete: Cascade)
+
+  title       String
+  summary     String
+  description String?
+
+  /// Total pot available, in minor units — same rule as everywhere else.
+  amountMinor Int
+  currency    String @default("inr")
+
+  /// Per-award ceiling. Null means the whole pot may go to one applicant.
+  maxAwardMinor Int?
+
+  /// Causes this grant is aimed at. An NGO working in any of them qualifies.
+  categories Category[]
+
+  /*
+   * Eligibility is stored as structured JSON rather than columns because the
+   * rules a funder cares about vary per grant, and each new rule would
+   * otherwise mean a migration. It is written and read through a Zod schema, so
+   * the shape is still validated — just not frozen into the table.
+   */
+  eligibility Json?
+
+  /// Free-text questions applicants must answer, as a JSON array of strings.
+  questions Json?
+
+  status GrantStatus @default(DRAFT)
+
+  /// Applications are refused after this instant.
+  deadline DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  applications GrantApplication[]
+
+  @@index([status, deadline])
+  @@index([funderId, createdAt])
+}
+
+/// The workflow an application moves through.
+///
+/// Order matters: this mirrors the real review pipeline, and the allowed
+/// transitions between these states are enforced server-side in
+/// `grantWorkflow.ts` rather than by whatever the UI happens to offer.
+enum ApplicationStatus {
+  /// NGO is still writing it. Only the NGO can see it.
+  DRAFT
+  /// Submitted; waiting for the funder to begin triage.
+  SUBMITTED
+  /// Funder has acknowledged it and it is queued for review.
+  REVIEW_PENDING
+  /// A specific reviewer is responsible for it.
+  REVIEWER_ASSIGNED
+  /// Shortlisted; the funder wants to talk to the NGO.
+  INTERVIEW
+  /// Funder committed the money.
+  APPROVED
+  /// Money moved (ledger entry written).
+  FUNDS_RELEASED
+  /// NGO is delivering and posting progress reports.
+  IN_PROGRESS
+  /// Delivered and signed off.
+  COMPLETED
+  /// Terminal. Reachable from any pre-approval state.
+  REJECTED
+  /// NGO pulled out before a decision.
+  WITHDRAWN
+}
+
+model GrantApplication {
+  id String @id @default(cuid())
+
+  grantId String
+  grant   Grant  @relation(fields: [grantId], references: [id], onDelete: Cascade)
+
+  /// The applying NGO. Scoped by organisation rather than user so the
+  /// application survives a change of admin.
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  status ApplicationStatus @default(DRAFT)
+
+  /// How much the NGO is asking for — never more than the grant's maxAward.
+  requestedAmountMinor Int
+
+  /// The pitch, plus answers to the funder's questions (JSON array, index-aligned
+  /// with Grant.questions).
+  proposal Json?
+
+  /// Set once the funder commits, and may differ from the amount requested —
+  /// partial awards are normal in grantmaking.
+  awardedAmountMinor Int?
+
+  /// Optional named reviewer, set at REVIEWER_ASSIGNED.
+  reviewerId String?
+  reviewer   User?   @relation("AssignedReviews", fields: [reviewerId], references: [id], onDelete: SetNull)
+
+  submittedAt DateTime?
+  decidedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  reviews     Review[]
+  comments    Comment[]
+  events      ApplicationEvent[]
+  project     Project?
+
+  /// One application per organisation per grant — enforced in the database so a
+  /// double-submit cannot create two.
+  @@unique([grantId, organizationId])
+  @@index([organizationId, status])
+  @@index([grantId, status])
+}
+
+/// A reviewer's scored assessment. Separate from Comment because a score is
+/// structured decision input, while comments are discussion.
+model Review {
+  id String @id @default(cuid())
+
+  applicationId String
+  application   GrantApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  reviewerId String
+  reviewer   User   @relation("WrittenReviews", fields: [reviewerId], references: [id], onDelete: Cascade)
+
+  /// 1–5. Kept as Int because a rubric score is genuinely discrete.
+  score Int
+
+  strengths String?
+  concerns  String?
+
+  recommend Boolean
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// One review per reviewer per application; editing replaces it.
+  @@unique([applicationId, reviewerId])
+}
+
+/// Internal discussion on an application, visible only to the funder side.
+model Comment {
+  id String @id @default(cuid())
+
+  applicationId String
+  application   GrantApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  body String
+
+  /// Internal notes are hidden from the applicant NGO; public ones are shown as
+  /// reviewer feedback. One model, one flag — two tables would duplicate every
+  /// query for no gain.
+  internal Boolean @default(true)
+
+  createdAt DateTime @default(now())
+
+  @@index([applicationId, createdAt])
+}
+
+/// Immutable audit trail of every status change.
+///
+/// The application's own `status` is only the CURRENT state; this is the
+/// history. It exists because "who moved this to APPROVED, and when" is exactly
+/// the question that gets asked about a funding decision after the fact.
+model ApplicationEvent {
+  id String @id @default(cuid())
+
+  applicationId String
+  application   GrantApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  /// Null for system-generated transitions (e.g. auto-close at deadline).
+  actorId String?
+  actor   User?   @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  fromStatus ApplicationStatus?
+  toStatus   ApplicationStatus
+
+  note String?
+
+  /// Whether `note` is hidden from the applicant.
+  ///
+  /// The status change itself is always visible to both sides — an applicant
+  /// must be able to see they were rejected. The NOTE is different: the funder
+  /// UI asks "why are you making this decision?", which invites candid internal
+  /// reasoning. Defaults to true so a note is private unless the funder
+  /// deliberately shares it — the same fail-closed rule as Comment.internal.
+  noteInternal Boolean @default(true)
+
+  createdAt DateTime @default(now())
+
+  @@index([applicationId, createdAt])
+}
+
+/// Work funded by an approved grant, created when funds are released.
+model Project {
+  id String @id @default(cuid())
+
+  applicationId String           @unique
+  application   GrantApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  title       String
+  description String?
+
+  startedAt DateTime  @default(now())
+  endedAt   DateTime?
+
+  createdAt DateTime @default(now())
+
+  reports Report[]
+
+  @@index([organizationId, createdAt])
+}
+
+enum ReportType {
+  MILESTONE
+  EXPENSE
+  UPDATE
+}
+
+/// A progress update on a funded project — how donors and funders see where the
+/// money actually went.
+model Report {
+  id String @id @default(cuid())
+
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  type ReportType @default(UPDATE)
+
+  title String
+  body  String
+
+  /// Money spent since the previous report, for expense reports.
+  spentMinor Int?
+
+  /// Cloudinary URLs of supporting photos, as a JSON array of strings.
+  mediaUrls Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([projectId, createdAt])
+}
+
+/* ── Platform admin & notifications (Phase 5–6) ───────────────────────────── */
+
+/// Actions worth being able to answer questions about later.
+enum AuditAction {
+  ORGANIZATION_VERIFIED
+  ORGANIZATION_UNVERIFIED
+  ORGANIZATION_SUSPENDED
+  ORGANIZATION_REINSTATED
+  USER_SUSPENDED
+  USER_REINSTATED
+  GRANT_DECISION
+  FUNDS_RELEASED
+}
+
+/// Append-only record of privileged actions.
+///
+/// Separate from ApplicationEvent on purpose: that tracks one application's
+/// lifecycle and is shown to participants, whereas this is a platform-wide
+/// compliance trail of what STAFF did. Mixing them would mean every applicant
+/// query had to filter out admin activity.
+model AuditLog {
+  id String @id @default(cuid())
+
+  /// Null if the actor was deleted — the record must outlive the account.
+  actorId String?
+  actor   User?   @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  action AuditAction
+
+  /// What was acted on. Kept as a loose type+id pair rather than a real foreign
+  /// key so a log entry survives the target being deleted.
+  targetType String
+  targetId   String
+  targetName String?
+
+  /// Why. Admins are required to supply this for suspensions.
+  reason String?
+
+  /// Anything else worth keeping (previous status, amounts).
+  metadata Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([action, createdAt])
+  @@index([targetType, targetId])
+  @@index([createdAt])
+}
+
+enum NotificationType {
+  DONATION_RECEIVED
+  GRANT_POSTED
+  APPLICATION_SUBMITTED
+  APPLICATION_STATUS_CHANGED
+  ORGANIZATION_VERIFIED
+  REPORT_POSTED
+}
+
+/// An in-app notification for one user.
+model Notification {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type NotificationType
+
+  title String
+  body  String
+
+  /// Where clicking it should take the user.
+  link String?
+
+  readAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  /// Composite so the unread badge is a single index scan.
+  @@index([userId, readAt, createdAt])
+}
+
+/* ── AI assistance (Phase 7) ──────────────────────────────────────────────── */
+
+enum AiInsightKind {
+  /// Plain-language summary of a grant application, for the funder's queue.
+  APPLICATION_SUMMARY
+  /// Gaps and weaknesses in an application, for the NGO before it submits.
+  APPLICATION_REVIEW
+  /// Which open grants suit an organisation, and why.
+  GRANT_MATCH
+}
+
+/// A cached AI result.
+///
+/// Generation is slow and quota-limited, and the same funder opening the same
+/// application twice should not spend two calls. `inputHash` is a digest of the
+/// exact text the result was derived from, so a cache entry is reused only
+/// while the underlying content is unchanged — editing a proposal invalidates
+/// its summary automatically rather than serving a stale one.
+model AiInsight {
+  id String @id @default(cuid())
+
+  kind AiInsightKind
+
+  /// What this describes — "GrantApplication", "Organization", …
+  targetType String
+  targetId   String
+
+  /// SHA-256 of the source text. See the note above on why.
+  inputHash String
+
+  /// Markdown for prose results, JSON for structured ones.
+  content String
+
+  /// Which model produced it, so a model change can be traced later.
+  model String
+
+  createdAt DateTime @default(now())
+
+  /// One cached result per target per kind; a new hash replaces it.
+  @@unique([targetType, targetId, kind])
+  @@index([kind, createdAt])
+}

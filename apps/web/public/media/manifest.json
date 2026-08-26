@@ -1,0 +1,262 @@
+{
+  "generatedAt": "2026-08-15T11:04:21.404Z",
+  "hero": {
+    "count": 100,
+    "width": 1126,
+    "height": 648,
+    "pathPattern": "hero/frame-%04d.jpg"
+  },
+  "loops": {
+    "water-loop": {
+      "mp4": "water-loop.mp4",
+      "webm": "water-loop.webm",
+      "bytes": {
+        "mp4": 1692087,
+        "webm": 1898289
+      }
+    },
+    "tree-loop": {
+      "mp4": "tree-loop.mp4",
+      "webm": "tree-loop.webm",
+      "bytes": {
+        "mp4": 1482605,
+        "webm": 1745719
+      }
+    },
+    "texture-loop": {
+      "mp4": "texture-loop.mp4",
+      "webm": "texture-loop.webm",
+      "bytes": {
+        "mp4": 1404393,
+        "webm": 1529096
+      }
+    },
+    "people-loop": {
+      "mp4": "people-loop.mp4",
+      "webm": "people-loop.webm",
+      "bytes": {
+        "mp4": 1490333,
+        "webm": 1424105
+      }
+    },
+    "community-loop": {
+      "mp4": "community-loop.mp4",
+      "webm": "community-loop.webm",
+      "bytes": {
+        "mp4": 1303141,
+        "webm": 1563618
+      }
+    }
+  },
+  "stories": [
+    {
+      "file": "story-01-wide.jpg",
+      "width": 489,
+      "height": 264
+    },
+    {
+      "file": "story-01-portrait.jpg",
+      "width": 222,
+      "height": 184
+    },
+    {
+      "file": "story-01-detail.jpg",
+      "width": 265,
+      "height": 184
+    },
+    {
+      "file": "story-02-wide.jpg",
+      "width": 487,
+      "height": 264
+    },
+    {
+      "file": "story-02-portrait.jpg",
+      "width": 241,
+      "height": 184
+    },
+    {
+      "file": "story-02-detail.jpg",
+      "width": 243,
+      "height": 184
+    },
+    {
+      "file": "story-03-wide.jpg",
+      "width": 488,
+      "height": 264
+    },
+    {
+      "file": "story-03-portrait.jpg",
+      "width": 216,
+      "height": 184
+    },
+    {
+      "file": "story-03-detail.jpg",
+      "width": 268,
+      "height": 184
+    },
+    {
+      "file": "story-04-wide.jpg",
+      "width": 489,
+      "height": 262
+    },
+    {
+      "file": "story-04-portrait.jpg",
+      "width": 216,
+      "height": 192
+    },
+    {
+      "file": "story-04-detail.jpg",
+      "width": 269,
+      "height": 192
+    },
+    {
+      "file": "story-05-wide.jpg",
+      "width": 487,
+      "height": 262
+    },
+    {
+      "file": "story-05-portrait.jpg",
+      "width": 204,
+      "height": 192
+    },
+    {
+      "file": "story-05-detail.jpg",
+      "width": 279,
+      "height": 192
+    },
+    {
+      "file": "story-06-wide.jpg",
+      "width": 488,
+      "height": 262
+    },
+    {
+      "file": "story-06-portrait.jpg",
+      "width": 240,
+      "height": 192
+    },
+    {
+      "file": "story-06-detail.jpg",
+      "width": 244,
+      "height": 192
+    }
+  ],
+  "stills": [
+    {
+      "file": "hero-poster.jpg",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "file": "cause-education.jpg",
+      "width": 1024,
+      "height": 684
+    },
+    {
+      "file": "cause-healthcare.jpg",
+      "width": 612,
+      "height": 408
+    },
+    {
+      "file": "cause-women-empowerment.jpg",
+      "width": 600,
+      "height": 400
+    },
+    {
+      "file": "cause-environment.jpg",
+      "width": 533,
+      "height": 534
+    },
+    {
+      "file": "cause-animals.jpg",
+      "width": 480,
+      "height": 640
+    },
+    {
+      "file": "cause-disaster-relief.jpg",
+      "width": 959,
+      "height": 500
+    },
+    {
+      "file": "children.jpg",
+      "width": 1024,
+      "height": 720
+    },
+    {
+      "file": "ngo-children.jpg",
+      "width": 1600,
+      "height": 1158
+    },
+    {
+      "file": "ngo-community.jpg",
+      "width": 1200,
+      "height": 658
+    },
+    {
+      "file": "detail-classroom-desk.jpg",
+      "width": 500,
+      "height": 376
+    },
+    {
+      "file": "detail-documents.jpg",
+      "width": 554,
+      "height": 554
+    },
+    {
+      "file": "detail-fabric.jpg",
+      "width": 678,
+      "height": 452
+    },
+    {
+      "file": "texture-building.jpg",
+      "width": 414,
+      "height": 484
+    },
+    {
+      "file": "detail-maps.jpg",
+      "width": 700,
+      "height": 834
+    },
+    {
+      "file": "forest-restoration.jpg",
+      "width": 1080,
+      "height": 600
+    },
+    {
+      "file": "forest-restoration-2.jpg",
+      "width": 640,
+      "height": 312
+    },
+    {
+      "file": "detail-closeup.jpg",
+      "width": 1536,
+      "height": 1024
+    }
+  ],
+  "posters": [
+    {
+      "file": "water.jpg",
+      "width": 1600,
+      "height": 900
+    },
+    {
+      "file": "tree.jpg",
+      "width": 1600,
+      "height": 900
+    },
+    {
+      "file": "texture.jpg",
+      "width": 960,
+      "height": 576
+    },
+    {
+      "file": "people.jpg",
+      "width": 1126,
+      "height": 648
+    },
+    {
+      "file": "community.jpg",
+      "width": 960,
+      "height": 576
+    }
+  ]
+}

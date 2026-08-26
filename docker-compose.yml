@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: impactbridge-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: impactbridge
+      POSTGRES_PASSWORD: impactbridge
+      POSTGRES_DB: impactbridge
+    ports:
+      - "5433:5432"
+    volumes:
+      - impactbridge_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U impactbridge -d impactbridge"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  impactbridge_pgdata:

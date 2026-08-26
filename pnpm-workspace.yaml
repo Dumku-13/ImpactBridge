@@ -1,0 +1,12 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+# pnpm blocks dependency build scripts by default (supply-chain safety).
+# These are trusted, first-party tools that legitimately need their postinstall:
+# Prisma generates its typed client; esbuild installs its native binary.
+allowBuilds:
+  '@prisma/client': true
+  '@prisma/engines': true
+  argon2: true
+  esbuild: true
+  prisma: true
