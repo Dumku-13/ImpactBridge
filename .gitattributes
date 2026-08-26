@@ -1,0 +1,37 @@
+# Line endings
+#
+# Everything text is stored in the repository with LF and checked out with LF,
+# on every machine. Without this, Git obeys the local `core.autocrlf` — which is
+# `true` on the Windows box this project is developed on — so a checkout would
+# rewrite every file to CRLF and the next commit from a Mac or from CI would
+# show every line as changed. Editors and Node handle LF on Windows fine; the
+# churn is the only thing that actually breaks.
+#
+# `text=auto` still lets Git decide what is text at all, so binaries below are
+# belt and braces rather than the only protection.
+* text=auto eol=lf
+
+# Shell scripts must keep LF even if a rule above is ever relaxed — a CRLF
+# shebang line makes the interpreter unfindable and the script dies with an
+# error that names the wrong thing entirely.
+*.sh text eol=lf
+
+# Media pipeline output (apps/web/public/media/) — committed on purpose, and
+# must never be passed through line-ending or diff machinery.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.avif binary
+*.gif binary
+*.ico binary
+*.mp4 binary
+*.webm binary
+*.woff binary
+*.woff2 binary
+*.pdf binary
+
+# Generated: keep it out of diffs and out of language statistics. It is still
+# committed and still reviewed when it changes — this only stops a 114 kB
+# lockfile from burying an actual change in a diff.
+pnpm-lock.yaml -diff linguist-generated=true
