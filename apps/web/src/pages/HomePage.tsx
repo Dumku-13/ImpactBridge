@@ -4,7 +4,7 @@ import { ROLE_LABELS } from "@impactbridge/shared";
 import { useAuth } from "@/auth/AuthContext";
 import { homeForRole } from "@/auth/routes";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
-import { Hero } from "@/components/home/Hero";
+import { Opening } from "@/components/home/Opening";
 import { Premise } from "@/components/home/Premise";
 import { FundingFlow } from "@/components/home/FundingFlow";
 import { StoryRail } from "@/components/home/StoryRail";
@@ -87,7 +87,7 @@ export function HomePage() {
       </header>
 
       <main>
-        <Hero />
+        <Opening />
 
         <Premise />
 
