@@ -83,9 +83,19 @@ export function Reveal({
       ref={ref}
       style={{ ...style, ...(visible && delay ? { animationDelay: `${delay}ms` } : null) }}
       className={cn(
-        // Held at opacity-0 until seen. `animate-fade-up` uses fill mode `both`,
-        // so once it runs the final state persists.
-        visible ? "animate-fade-up" : "opacity-0",
+        /*
+         * Held DIM until seen, never invisible. `opacity-30` rather than
+         * `opacity-0` because this state depends entirely on
+         * IntersectionObserver firing: anywhere it doesn't deliver — a
+         * renderer that never composites, a tab throttled while loading — an
+         * `opacity-0` hold is permanent and the section is a blank band. The
+         * automated preview browser is exactly such an environment, which is
+         * how this was found. Same rule as `.row-enter` and `fade-up`.
+         *
+         * `animate-fade-up` uses fill mode `both`, so once it runs the final
+         * state persists.
+         */
+        visible ? "animate-fade-up" : "opacity-30",
         className,
       )}
     >

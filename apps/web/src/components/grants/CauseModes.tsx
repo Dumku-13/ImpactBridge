@@ -52,6 +52,15 @@ export function CauseModes({
       */}
       {backdrop && (
         <div key={active} aria-hidden="true" className="absolute inset-0 -z-10">
+          {/*
+            The one place this project deliberately renders a photograph above
+            its native width. It is a full-bleed backdrop sitting under a 0.9
+            scrim — roughly a tenth of it survives — so it reads as tone, not as
+            an image, and softening is not perceptible at any window size. Every
+            other surface caps to the asset's real width (see `maxWidth` in
+            content/media.ts); don't "fix" this one by shrinking it, that just
+            breaks the bleed.
+          */}
           <img
             src={backdrop.src}
             alt=""

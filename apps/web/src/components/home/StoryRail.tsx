@@ -84,12 +84,16 @@ const STORY_COPY: StoryCopy[] = [
 ];
 
 /**
- * Native widths, with ~1.1x of headroom. These slices came off a contact sheet
- * — the wide plates are 489px and visibly soften past roughly 540px — so the
- * card width is capped rather than stretched to fill the band.
+ * NATIVE widths, with no headroom at all.
+ *
+ * These slices came off a contact sheet: the wide plates are 489px and the
+ * portraits 222px. The section this replaced allowed ~1.1x, which rendered a
+ * 489px photograph at 538px — a 10% upscale, inventing pixels for no gain. The
+ * card is capped at exactly what the source can supply and the band is composed
+ * around that limit rather than fighting it.
  */
-const WIDE_MAX = Math.round(storyMaxWidth.wide * 1.1); // 538
-const PORTRAIT_MAX = Math.round(storyMaxWidth.portrait * 1.1); // 244
+const WIDE_MAX = storyMaxWidth.wide; // 489
+const PORTRAIT_MAX = storyMaxWidth.portrait; // 222
 
 /**
  * Where in the section's pass across the viewport the horizontal travel starts

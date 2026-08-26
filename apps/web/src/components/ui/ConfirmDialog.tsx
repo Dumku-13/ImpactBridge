@@ -20,6 +20,13 @@ export function ConfirmDialog({
   title,
   description,
   confirmLabel = "Delete",
+  /*
+   * Red is not the only kind of irreversible. Marking a grant complete destroys
+   * nothing, but it cannot be undone — it deserves the gate without the alarm,
+   * so the confirm button's colour is a caller's choice. Destructive stays the
+   * default, since that is what this dialog was built for.
+   */
+  confirmVariant = "destructive",
   isPending = false,
 }: {
   open: boolean;
@@ -28,6 +35,7 @@ export function ConfirmDialog({
   title: string;
   description: ReactNode;
   confirmLabel?: string;
+  confirmVariant?: "destructive" | "primary";
   isPending?: boolean;
 }) {
   return (
@@ -49,7 +57,7 @@ export function ConfirmDialog({
         </Button>
         <Button
           type="button"
-          variant="destructive"
+          variant={confirmVariant}
           onClick={onConfirm}
           isLoading={isPending}
         >

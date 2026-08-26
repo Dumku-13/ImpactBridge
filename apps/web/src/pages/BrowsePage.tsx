@@ -147,7 +147,10 @@ export function BrowsePage() {
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
           The archive
         </p>
-        <h1 className="mt-5">
+        {/* h2, not h1: the opening plate above already carries this page's
+            single h1. Two h1s give a screen reader two "titles" for one page
+            and no way to tell which is the page. Styling is unchanged. */}
+        <h2 className="mt-5">
           <span
             className="block font-grotesk text-4xl font-extrabold uppercase leading-[0.94] tracking-[-0.025em] text-foreground sm:text-6xl"
             style={{ fontStretch: "86%" }}
@@ -160,7 +163,7 @@ export function BrowsePage() {
           >
             search it yourself.
           </span>
-        </h1>
+        </h2>
         <p className="mt-6 max-w-xl text-base leading-relaxed text-muted-foreground">
           Every organisation here has had its registration, documents and
           identity checked before it could take a rupee.

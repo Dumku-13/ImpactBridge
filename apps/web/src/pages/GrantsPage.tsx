@@ -78,12 +78,13 @@ export function GrantsPage() {
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
           Open opportunities
         </p>
-        <h1
+        {/* h2: `GrantsOpening` above carries this page's h1. Styling unchanged. */}
+        <h2
           className="mt-4 font-display text-3xl font-semibold tracking-[-0.02em] text-foreground sm:text-4xl"
           style={{ fontVariationSettings: '"SOFT" 12' }}
         >
           Every grant, with its rules attached
-        </h1>
+        </h2>
       </header>
 
       <div className="space-y-3">

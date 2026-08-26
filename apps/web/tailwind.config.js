@@ -91,20 +91,37 @@ export default {
           "80%": { opacity: "1" },
           "100%": { transform: "translate(-50%, 2rem)", opacity: "0" },
         },
+        /*
+         * Starts at 0.3, NOT 0 — the same rule as `.row-enter` in index.css.
+         * An animation that has been created but is not advancing (a throttled
+         * background tab, a stalled frame loop, a renderer that never
+         * composites) paints and holds its FIRST keyframe. At `opacity: 0` that
+         * means the content is simply gone, which is the worst failure this
+         * site has; at 0.3 the worst case is "briefly dim". This is the
+         * workhorse entrance for `Reveal` and `.stagger`, so it carries most of
+         * the page's text.
+         */
         "fade-up": {
-          from: { opacity: "0", transform: "translateY(12px)" },
+          from: { opacity: "0.3", transform: "translateY(12px)" },
           to: { opacity: "1", transform: "translateY(0)" },
         },
+        /*
+         * Same rule, and it matters most here: `fade-in` is the dialog backdrop
+         * and `scale-in` the dialog panel. A frozen first keyframe at zero
+         * opacity gives an INVISIBLE modal that has already trapped focus and
+         * locked scroll — the user is stuck in a dialog they cannot see.
+         */
         "fade-in": {
-          from: { opacity: "0" },
+          from: { opacity: "0.3" },
           to: { opacity: "1" },
         },
         "scale-in": {
-          from: { opacity: "0", transform: "scale(0.96)" },
+          from: { opacity: "0.3", transform: "scale(0.96)" },
           to: { opacity: "1", transform: "scale(1)" },
         },
         "slide-down": {
-          from: { opacity: "0", transform: "translateY(-8px) scale(0.98)" },
+          // Toasts. Same rule: a frozen toast should read as faint, not absent.
+          from: { opacity: "0.3", transform: "translateY(-8px) scale(0.98)" },
           to: { opacity: "1", transform: "translateY(0) scale(1)" },
         },
         // Skeletons sweep a highlight across themselves instead of pulsing.

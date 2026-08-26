@@ -315,6 +315,8 @@ function FunderGrantRow({ grant }: { grant: GrantCardType }) {
           });
         }}
         isPending={setStatus.isPending}
+        confirmLabel="Mark complete"
+        confirmVariant="primary"
         title="Mark this grant complete?"
         description={
           <>
