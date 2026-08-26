@@ -253,16 +253,27 @@ the grant → confirm reopen is refused) and then deleted everything it created.
   the donation impact moment, the documentary profile). The automated preview
   cannot judge appearance; see section 6.
 
-### Known data problem in the demo database
+### Fixed: the demo database and the seed that could not be run
 
-`vidya-jyoti-foundation` — the org behind `ngo@impactbridge.dev`, the primary
-demo NGO — has **no categories, no state, no founding year and no description**.
-They look wiped rather than never-set (the seed defines all four), most likely
-by an edit through the NGO settings form. Consequences: its profile renders
-almost empty, and it fails eligibility on any grant with a years-active rule.
-`db:seed` would restore it, but it also rewrites `totalRaisedMinor` /
-`donorCount` from static values, so run `seedDonations.ts` after it or the
-donation figures go stale.
+`vidya-jyoti-foundation` — the org behind `ngo@impactbridge.dev` — had lost its
+categories, city, state, founding year, description and funding goal (goal was
+literally 0) to a partial profile save on 2026-08-08. Restored.
+
+The reason it sat broken for weeks is worth keeping: `db:seed` was the only tool
+that could restore it, and running it would have overwritten the donation-derived
+`totalRaisedMinor` / `donorCount` with static figures. Both those fields — and
+`verified` / `verifiedAt`, for the same reason — are now **applied on create
+only**, so the seed proposes them for a fresh database and never imposes them on
+a live one. A second consecutive `db:seed` is now a no-op.
+
+If demo content drifts again: `pnpm --filter @impactbridge/api db:seed` then
+`db:seed:profiles`. Both are idempotent and neither touches money.
+
+One casualty worth knowing about: the first re-seed un-verified
+`kadam-skills-mission` (an admin had verified it at runtime; the seed file says
+false). It was restored from the **audit log**, which held the exact original
+timestamp — the platform's own traceability doing precisely the job it exists
+for.
 
 ### Not started
 
