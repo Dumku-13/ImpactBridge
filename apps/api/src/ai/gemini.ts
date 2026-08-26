@@ -77,9 +77,14 @@ async function callGemini(
       }),
       /*
        * A hung model request must not hold an Express handler open forever.
-       * 30s is generous for these short prompts and still bounded.
+       *
+       * 60s, not 30s: thinking tokens make latency scale with how hard the
+       * prompt is, and the grant matcher sends a profile plus twenty grants.
+       * Measured on `gemini-3.5-flash`, a trivial prompt already spends ~7s and
+       * ~90 thinking tokens before a two-character answer. A cap that trips on
+       * the app's heaviest legitimate call isn't a safety net, it's an outage.
        */
-      signal: AbortSignal.timeout(30_000),
+      signal: AbortSignal.timeout(60_000),
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "unknown";

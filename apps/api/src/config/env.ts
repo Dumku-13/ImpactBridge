@@ -68,16 +68,30 @@ const envSchema = z.object({
    */
   GEMINI_API_KEY: z.string().optional(),
   /**
-   * Deliberately an alias rather than a pinned version.
+   * Pinned, after the alias turned out to be the more dangerous option.
    *
-   * Free-tier quota is granted per model and Google retires specific versions
-   * fairly aggressively — pinned ids here failed two different ways on the same
-   * valid key: `gemini-2.5-flash` returned "no longer available", and
-   * `gemini-2.0-flash` returned quota "limit: 0". The `-latest` alias tracks
-   * whichever flash model is currently free, so the app doesn't break every
-   * time Google rotates them. Override it if a specific version is needed.
+   * History, because it decides how to debug this next time. Free-tier quota is
+   * granted per model and Google retires versions aggressively: `gemini-2.5-flash`
+   * answers "no longer available to new users" and `gemini-2.0-flash` returned
+   * quota "limit: 0", both on a perfectly valid key. So this was set to the
+   * `-latest` alias to track whichever flash model is currently free.
+   *
+   * On 2026-08-26 that alias stopped RESPONDING AT ALL — not an error, no
+   * status, just a socket that never answers until the 60s abort fires. A
+   * failure that hangs is far worse than one that 404s: every AI feature simply
+   * stalled, and the error surfaced as our own timeout, which points at our
+   * code rather than at Google's. Measured the same minute on the same key:
+   * `gemini-3.5-flash` answered in 7.8s and `gemini-flash-lite-latest` in 0.9s.
+   *
+   * To diagnose it again, ask the API which models the key can actually use —
+   * this returns in under a second even when generation hangs:
+   *
+   *   curl "https://generativelanguage.googleapis.com/v1beta/models?key=$GEMINI_API_KEY"
+   *
+   * Then try `:generateContent` on a candidate with `curl -m 30` before
+   * changing anything here. Override with GEMINI_MODEL in .env.
    */
-  GEMINI_MODEL: z.string().default("gemini-flash-latest"),
+  GEMINI_MODEL: z.string().default("gemini-3.5-flash"),
 
   CURRENCY: z.string().default("inr"),
 });
