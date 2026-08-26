@@ -279,6 +279,60 @@
   }
 }
 
+/*
+ * ── The landing opening's explode ──────────────────────────────────────────
+ *
+ * Scroll-linked motion driven by ONE custom property, `--op-p` (0 → 1), which a
+ * single rAF-throttled listener writes to the section. Everything below is a
+ * `calc()` off it: no animation library on this path, no per-frame React, and —
+ * because it is only arithmetic on a variable — it can be tested by setting the
+ * variable by hand, which no timeline-based version allows.
+ *
+ * Gated behind `.op-scrub`, the class that listener adds. The base rules leave
+ * every letter at its natural position and full opacity, so a browser that
+ * never runs the script gets a readable headline rather than an empty ink
+ * field. Same reason the F1 dashboard's `--hero-p` rules are gated behind
+ * `.hero-scrub-active`.
+ *
+ * `--cx` / `--cy` / `--cr` are per-character, measured once after layout: the
+ * unit vector from the centre of the headline through the centre of that
+ * letter. Radial, not random — random scatter reads as a bug, a shared origin
+ * reads as an explosion.
+ */
+@layer components {
+  .op-scrub .op-char {
+    transform:
+      translate(
+        calc(var(--cx, 0) * var(--op-p, 0) * 1px),
+        calc(var(--cy, 0) * var(--op-p, 0) * 1px)
+      )
+      rotate(calc(var(--cr, 0) * var(--op-p, 0) * 1deg))
+      scale(calc(1 + var(--op-p, 0) * 0.22));
+    /*
+     * Bottoms out at 0.34, never 0. A stalled frame loop paints and holds
+     * wherever it stopped; at zero that means the headline is simply gone,
+     * which is the failure this project has shipped twice. See `.row-enter`.
+     */
+    opacity: calc(1 - var(--op-p, 0) * 0.66);
+  }
+
+  /*
+   * The figures are what the explosion uncovers, so they gain weight as the
+   * letters lose it — and they start at 0.3 rather than 0 for the same reason
+   * as above.
+   */
+  .op-scrub .op-figures {
+    opacity: calc(0.3 + var(--op-p, 0) * 1.4);
+    transform: translateY(calc((0.45 - var(--op-p, 0)) * 46px));
+  }
+
+  /* The eyebrow and the buttons belong to the headline, so they leave with it. */
+  .op-scrub .op-chrome {
+    opacity: calc(1 - var(--op-p, 0) * 0.85);
+    transform: translateY(calc(var(--op-p, 0) * -26px));
+  }
+}
+
 @layer utilities {
   /*
    * Entrance stagger. Children animate in sequence rather than all at once,

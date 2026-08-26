@@ -5,12 +5,27 @@ import { useAuth } from "@/auth/AuthContext";
 import { homeForRole } from "@/auth/routes";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { Opening } from "@/components/home/Opening";
+import { ScrollSpine } from "@/components/home/ScrollSpine";
 import { Premise } from "@/components/home/Premise";
 import { FundingFlow } from "@/components/home/FundingFlow";
 import { StoryRail } from "@/components/home/StoryRail";
 import { StatBand } from "@/components/home/StatBand";
 import { Causes } from "@/components/home/Causes";
 import { useScrollTriggerRefresh } from "@/lib/gsap";
+
+/**
+ * What the scroll rail tracks. Ids are attached to wrappers below rather than
+ * inside each section component, so the rail's contents are decided in one
+ * place — where the page's order actually lives.
+ */
+const SPINE = [
+  { id: "opening", label: "The claim" },
+  { id: "premise", label: "The premise" },
+  { id: "flow", label: "How a rupee travels" },
+  { id: "numbers", label: "The numbers" },
+  { id: "work", label: "The work" },
+  { id: "causes", label: "The causes" },
+] as const;
 
 const AUDIENCES = [
   {
@@ -86,18 +101,32 @@ export function HomePage() {
         </nav>
       </header>
 
+      <ScrollSpine sections={[...SPINE]} />
+
       <main>
-        <Opening />
+        <div id="opening">
+          <Opening />
+        </div>
 
-        <Premise />
+        <div id="premise">
+          <Premise />
+        </div>
 
-        <FundingFlow />
+        <div id="flow">
+          <FundingFlow />
+        </div>
 
-        <StatBand />
+        <div id="numbers">
+          <StatBand />
+        </div>
 
-        <StoryRail />
+        <div id="work">
+          <StoryRail />
+        </div>
 
-        <Causes />
+        <div id="causes">
+          <Causes />
+        </div>
 
 
         <section className="border-t border-border bg-card/60">

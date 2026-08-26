@@ -1,150 +1,61 @@
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { ArrowDown, ArrowRight } from "lucide-react";
 import { formatMoneyCompact } from "@impactbridge/shared";
 import { usePublicStats } from "@/api/stats";
-import { gsap, prefersReducedMotion } from "@/lib/gsap";
+import { prefersReducedMotion } from "@/lib/gsap";
 
 /**
- * The landing opening: three statements that assemble out of chaos as you
- * scroll, and resolve into the headline.
+ * The landing opening: one sentence, as large as the screen allows, blown
+ * apart slowly by scroll.
  *
- * ── Why there is no photograph here ────────────────────────────────────────
+ * ── The shape of it ────────────────────────────────────────────────────────
  *
- * This replaced a full-bleed hero. Two versions of that failed for the same
- * reason: a person's face behind a headline takes the eye, forces a scrim heavy
- * enough to bleach the photograph, and — with stock-feeling footage — reads as a
- * template. Type at this scale IS the image. It also means the first photograph
- * anyone sees on this site is a real one of real work, further down, where it
- * lands properly.
+ * One statement, not three. An earlier version ran three beats that each
+ * assembled and dispersed; it read as a slideshow of headlines and none of them
+ * got to be big. This gives the whole opening to a single sentence at display
+ * scale, and spends the scroll on ONE idea: the line breaks apart, drifting
+ * outward from the centre of the composition, and the platform's real figures
+ * are revealed underneath as it clears.
  *
- * ── How the motion works, and why it isn't pinned ──────────────────────────
+ * Radial, not random: every character moves along the vector from the centre of
+ * the block through its own centre, measured after layout. Random scatter looks
+ * like a bug; a shared origin looks like an explosion.
  *
- * The obvious build is to pin a single screen and play the beats through it.
- * Pinning is banned here and the ban was earned twice (HANDOFF §3.1) — it
- * switches the element to fixed positioning inside a generated spacer, and
- * anything with a margin or a full-bleed breakout renders off-frame, leaving a
- * blank band.
+ * ── Why it sticks rather than pins ─────────────────────────────────────────
  *
- * So each beat is an ordinary section in normal document flow, and the letters
- * are what move: scattered and overlapping as the beat enters, converging into
- * the line at the moment it sits centred in the viewport, dispersing again as
- * it leaves. Scroll distance buys you a sentence assembling itself, which is
- * motion that carries information rather than motion that fills time.
+ * The panel is `position: sticky` — CSS, not `ScrollTrigger.pin`. The pin is
+ * banned here and the ban was earned twice (HANDOFF §3.1): it moves the element
+ * into a generated spacer at fixed position, where a margin or a full-bleed
+ * breakout renders off-frame and leaves a blank band. Sticky keeps the element
+ * in normal flow and cannot do that.
  *
- * With `prefers-reduced-motion`, or if the script never runs, no scatter is
- * ever applied and the resting DOM is three legible statements. The worst case
- * is "no animation", never "no content" (§3.2).
+ * The section is only ~1.7 screens tall, which is the slow-explode distance and
+ * also the worst case if the script never runs: the resting DOM is the
+ * headline, legible and still, with the figures beneath it. Never a blank.
  */
-
-/** Deterministic pseudo-random in [-1, 1], stable across renders and reloads. */
-function jitter(seed: number): number {
-  const x = Math.sin(seed * 127.1) * 43758.5453;
-  return (x - Math.floor(x)) * 2 - 1;
-}
 
 /**
- * One display line, split into characters so they can move independently.
+ * The sentence, split to characters.
  *
- * `aria-label` carries the real sentence and the pieces are hidden from the
- * accessibility tree: a screen reader announcing "M — o — n — e — y" letter by
- * letter is how kinetic type usually breaks for the people least able to
- * work around it.
+ * `aria-label` carries the real line and the pieces are `aria-hidden`, because
+ * a screen reader spelling out "F — U — N — D — I — N — G" is how kinetic type
+ * usually fails the people least able to route around it.
  */
-function SplitLine({
-  text,
-  className,
-  highlight,
-}: {
-  text: string;
-  className?: string;
-  /** Word (case-sensitive) painted in the accent colour. */
-  highlight?: string;
-}) {
-  const words = text.split(" ");
-  let charIndex = 0;
-
+function SplitLine({ text, className }: { text: string; className?: string }) {
   return (
-    <span aria-label={text} className={className}>
-      {words.map((word, w) => (
+    <span className={className}>
+      {text.split(" ").map((word, w) => (
         <span key={`${word}-${w}`} aria-hidden="true" className="inline-block whitespace-nowrap">
-          {[...word].map((char, c) => {
-            const i = charIndex++;
-            return (
-              <span
-                key={`${char}-${c}`}
-                className="op-char inline-block will-change-transform"
-                data-seed={i}
-                style={highlight === word ? { color: "hsl(var(--accent))" } : undefined}
-              >
-                {char}
-              </span>
-            );
-          })}
-          {/* A real space between words, outside the animated spans, so the
-              line still wraps and reads correctly when nothing is moving. */}
-          {w < words.length - 1 && <span className="inline-block">&nbsp;</span>}
+          {[...word].map((char, c) => (
+            <span key={`${char}-${c}`} className="op-char inline-block will-change-transform">
+              {char}
+            </span>
+          ))}
+          {w < text.split(" ").length - 1 && <span className="inline-block">&nbsp;</span>}
         </span>
       ))}
     </span>
-  );
-}
-
-function Beat({
-  index,
-  line,
-  highlight,
-  figure,
-  caption,
-}: {
-  index: string;
-  line: string;
-  highlight?: string;
-  /** The real number underneath. Pre-formatted by the caller. */
-  figure: ReactNode;
-  caption: string;
-}) {
-  return (
-    <section className="op-beat relative flex min-h-[64svh] items-center py-10">
-      <div className="mx-auto w-full max-w-7xl px-6">
-        <p className="tnum text-[10px] font-semibold uppercase tracking-[0.24em] text-[hsl(var(--paper)/0.45)]">
-          {index}
-        </p>
-
-        <p
-          className="mt-6 font-grotesk uppercase leading-[0.82] tracking-[-0.045em] text-[hsl(var(--paper))]"
-          style={{
-            // Archivo's width axis pushed to its narrow extreme. The face has
-            // carried a 62–125% width range all along and the site only ever
-            // used the middle of it; at 62% and weight 900 it is a different,
-            // stranger typeface — for no extra download, because it is the same
-            // file already loaded.
-            fontStretch: "62%",
-            fontWeight: 900,
-            fontSize: "clamp(3.5rem, 15vw, 13rem)",
-          }}
-        >
-          <SplitLine text={line} highlight={highlight} />
-        </p>
-
-        {/*
-          The figure. Every one is read live from /stats/public, which only
-          serves values derivable from a row count or a SUM — see the schema's
-          own note on why "people reached" is not among them.
-        */}
-        <div className="op-figure mt-10 flex flex-wrap items-baseline gap-x-5 gap-y-2 border-t border-[hsl(var(--paper)/0.15)] pt-6">
-          <span
-            className="tnum font-grotesk text-3xl font-extrabold leading-none text-[hsl(var(--paper))] sm:text-5xl"
-            style={{ fontStretch: "84%" }}
-          >
-            {figure}
-          </span>
-          <span className="max-w-md text-sm leading-relaxed text-[hsl(var(--paper)/0.6)]">
-            {caption}
-          </span>
-        </div>
-      </div>
-    </section>
   );
 }
 
@@ -154,156 +65,183 @@ export function Opening() {
 
   useEffect(() => {
     const root = rootRef.current;
-    if (!root || prefersReducedMotion()) return;
+    if (!root) return;
 
-    const ctx = gsap.context(() => {
-      gsap.utils.toArray<HTMLElement>(".op-beat").forEach((beat, beatIndex) => {
-        const chars = beat.querySelectorAll<HTMLElement>(".op-char");
-        if (chars.length === 0) return;
+    const chars = Array.from(root.querySelectorAll<HTMLElement>(".op-char"));
+    const headline = root.querySelector<HTMLElement>(".op-headline");
+    if (!headline || chars.length === 0) return;
 
+    /*
+     * Measure once, before anything moves: each letter's direction is the
+     * vector from the centre of the headline through its own centre. Written
+     * onto the element as custom properties, so the scroll handler afterwards
+     * only ever writes ONE value for the whole section and CSS does the rest.
+     */
+    const measure = () => {
+      const box = headline.getBoundingClientRect();
+      const centreX = box.left + box.width / 2;
+      const centreY = box.top + box.height / 2;
+
+      for (const char of chars) {
+        const rect = char.getBoundingClientRect();
+        const dx = rect.left + rect.width / 2 - centreX;
+        const dy = rect.top + rect.height / 2 - centreY;
+        const distance = Math.hypot(dx, dy) || 1;
+
+        // Outermost letters travel furthest, so the line opens rather than
+        // smearing uniformly.
         /*
-         * ONE timeline per beat, not two triggers. The first half assembles,
-         * the second disperses; splitting that across two ScrollTriggers means
-         * both own the same targets and they fight at the hand-over, which
-         * shows up as a jump exactly when the line is most readable.
+         * Distances are generous on purpose: by the end of the travel the line
+         * should be off the edges of the screen, not hovering politely near
+         * where it started. The `Math.abs` terms scale with how far out the
+         * letter already sits, so the composition opens from the middle
+         * outward instead of sliding sideways as a block.
          */
-        const timeline = gsap.timeline({
-          scrollTrigger: {
-            trigger: beat,
-            start: "top bottom",
-            end: "bottom top",
-            scrub: 0.8,
-          },
-        });
+        char.style.setProperty("--cx", String(Math.round((dx / distance) * (260 + Math.abs(dx) * 1.1))));
+        char.style.setProperty("--cy", String(Math.round((dy / distance) * (210 + Math.abs(dy) * 2.6))));
+        char.style.setProperty("--cr", String(Math.round((dx / distance) * 26)));
+      }
+    };
 
-        const scatter = (phase: number) => ({
-          xPercent: (i: number) => jitter(i + phase + beatIndex * 31) * 70,
-          yPercent: (i: number) => jitter(i * 1.7 + phase + beatIndex * 17) * 90,
-          rotate: (i: number) => jitter(i * 2.3 + phase) * 26,
-          scale: (i: number) => 1 + Math.abs(jitter(i * 3.1 + phase)) * 0.5,
-          // Never below 0.3: a stalled frame loop must leave the words dim,
-          // not absent (§3.2).
-          opacity: 0.32,
-        });
+    /*
+     * Reduced motion: measure nothing, add nothing. Without `.op-scrub` the
+     * rules in index.css never apply and the resting DOM is the finished
+     * state — a still headline, which is exactly right.
+     */
+    if (prefersReducedMotion()) return;
 
-        timeline
-          .fromTo(
-            chars,
-            { ...scatter(0), ease: "none" },
-            {
-              xPercent: 0,
-              yPercent: 0,
-              rotate: 0,
-              scale: 1,
-              opacity: 1,
-              ease: "power2.out",
-              duration: 0.5,
-            },
-            0,
-          )
-          // Out the other side, scattered differently so it reads as continuing
-          // rather than rewinding.
-          .to(chars, { ...scatter(101), ease: "power2.in", duration: 0.5 }, 0.5);
+    measure();
+    root.classList.add("op-scrub");
 
-        const figure = beat.querySelector(".op-figure");
-        if (figure) {
-          timeline
-            .fromTo(
-              figure,
-              { opacity: 0.3, y: 28 },
-              { opacity: 1, y: 0, ease: "none", duration: 0.35 },
-              0.15,
-            )
-            .to(figure, { opacity: 0.3, y: -28, ease: "none", duration: 0.35 }, 0.65);
-        }
-      });
-    }, root);
+    let frame = 0;
 
-    return () => ctx.revert();
+    const update = () => {
+      frame = 0;
+      const rect = root.getBoundingClientRect();
+      // Distance available for the explode: the section's height minus the one
+      // viewport the sticky panel occupies.
+      const travel = rect.height - window.innerHeight;
+      const progress = travel > 0 ? -rect.top / travel : 0;
+      root.style.setProperty("--op-p", Math.min(Math.max(progress, 0), 1).toFixed(4));
+    };
+
+    const onScroll = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(update);
+    };
+
+    const onResize = () => {
+      // Vectors are pixel distances measured at one layout; a resize changes
+      // the type size and every one of them is then wrong.
+      root.style.setProperty("--op-p", "0");
+      measure();
+      onScroll();
+    };
+
+    update();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onResize, { passive: true });
+    // Web fonts land after mount and change every glyph's width, so the first
+    // measurement is taken against fallback metrics.
+    document.fonts?.ready.then(onResize);
+
+    return () => {
+      if (frame) cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onResize);
+      root.classList.remove("op-scrub");
+    };
   }, [stats]);
 
   const currency = stats?.currency ?? "inr";
 
+  const figures = [
+    {
+      value: stats ? formatMoneyCompact(stats.totalRaisedMinor, currency) : "—",
+      label: "given, and every rupee of it receipted",
+    },
+    {
+      value: stats ? `${stats.verifiedOrganizations}/${stats.organizations}` : "—",
+      label: "organisations checked by a person before they could take a rupee",
+    },
+    {
+      value: stats ? String(stats.openGrants) : "—",
+      label: "grants open right now, rules and deadline attached",
+    },
+  ];
+
   return (
     <div
       ref={rootRef}
-      /* Ink and paper: the theme-INDEPENDENT pair. The semantic tokens swap
-         with the theme and would invert this whole opening in dark mode
-         (HANDOFF §3.3). */
-      className="relative bg-[hsl(var(--ink))] text-[hsl(var(--paper))]"
+      /* `--ink` / `--paper`: the theme-INDEPENDENT pair. The semantic tokens
+         swap with the theme and would invert this whole panel in dark mode
+         (HANDOFF §3.3). ~1.7 screens is the explode distance. */
+      /* Two and a half screens of scroll for the explode. The F1 dashboard
+         spends three on its car and the length is load-bearing there for the
+         same reason it is here: too short and the thing never finishes coming
+         apart before the next section arrives. */
+      className="relative h-[250svh] bg-[hsl(var(--ink))] text-[hsl(var(--paper))]"
     >
-      {/* Standing in for the removed hero's first screen: the site's name and
-          its claim, before the beats begin. */}
-      <div className="mx-auto flex min-h-[52svh] max-w-7xl flex-col justify-end px-6 pb-10 pt-28">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[hsl(var(--paper)/0.5)]">
-          Verified nonprofits · transparent grants
-        </p>
-        <p className="mt-6 max-w-2xl font-display text-xl leading-snug text-[hsl(var(--paper)/0.75)] sm:text-2xl">
-          Three things have to be true before a donation means anything.
-        </p>
-        <p className="mt-10 inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[hsl(var(--paper)/0.45)]">
-          <ArrowDown className="h-3 w-3" />
-          Scroll
-        </p>
-      </div>
+      <div className="sticky top-0 flex h-svh flex-col justify-center overflow-hidden">
+        <div className="mx-auto w-full max-w-[110rem] px-6">
+          <p className="op-chrome text-[10px] font-semibold uppercase tracking-[0.24em] text-[hsl(var(--paper)/0.5)]">
+            Verified nonprofits · transparent grants
+          </p>
 
-      <Beat
-        index="01 / 03"
-        line="Money moves"
-        highlight="moves"
-        figure={
-          stats ? formatMoneyCompact(stats.totalRaisedMinor, currency) : "—"
-        }
-        caption="given through the platform so far, summed from completed donations — not pledges, not intentions."
-      />
-
-      <Beat
-        index="02 / 03"
-        line="Someone signs for it"
-        highlight="signs"
-        figure={stats ? `${stats.verifiedOrganizations}/${stats.organizations}` : "—"}
-        caption="organisations verified by a person who read their registration documents before the page went live."
-      />
-
-      <Beat
-        index="03 / 03"
-        line="You can check"
-        highlight="check"
-        figure={stats ? stats.openGrants : "—"}
-        caption={`grants open right now, each with its rules, its deadline and its decisions on the record${
-          stats && stats.states > 0 ? `, across ${stats.states} states` : ""
-        }.`}
-      />
-
-      {/* The resolution. This is the page's h1 — the beats above are display
-          type with `aria-label`, so the document still has exactly one title. */}
-      <section className="relative flex min-h-[74svh] items-center border-t border-[hsl(var(--paper)/0.15)] py-16">
-        <div className="mx-auto w-full max-w-7xl px-6">
-          <h1 className="max-w-5xl">
-            <span
-              className="block font-grotesk uppercase leading-[0.86] tracking-[-0.04em] text-[hsl(var(--paper))]"
-              style={{
-                fontStretch: "70%",
-                fontWeight: 900,
-                fontSize: "clamp(2.75rem, 9vw, 8rem)",
-              }}
-            >
-              Funding that
-              <br />
-              actually reaches
-            </span>
-            <span
-              className="mt-2 block font-display font-semibold leading-[0.92] tracking-[-0.035em] text-accent"
-              style={{
-                fontVariationSettings: '"SOFT" 10',
-                fontSize: "clamp(2.75rem, 9vw, 8rem)",
-              }}
-            >
-              the ground.
+          <h1
+            className="op-headline mt-8 font-grotesk uppercase leading-[0.8] tracking-[-0.05em]"
+            style={{
+              /*
+               * Archivo's width axis at its narrow extreme. The face has
+               * carried 62–125% all along and the site only ever used the
+               * middle; at 62% and weight 900 it is effectively a different
+               * typeface, for no extra download. Narrow is also what lets the
+               * line be this large without wrapping into a wall.
+               */
+              fontStretch: "62%",
+              fontWeight: 900,
+              /*
+               * Sized against the viewport's HEIGHT as well as its width.
+               * `16vw` alone gave 205px a line — three lines plus the figures
+               * and the buttons came to 935px inside a 900px panel, so the
+               * call to action was clipped off the bottom of a `h-svh` box. A
+               * headline that big is worth nothing if it pushes the button out
+               * of the screen, and the shorter the window the worse it got.
+               */
+              fontSize: "clamp(2.75rem, min(15vw, 17svh), 13rem)",
+            }}
+          >
+            <SplitLine text="Funding that" className="block" />
+            <SplitLine text="actually reaches" className="block" />
+            <SplitLine text="the ground." className="block text-accent" />
+            {/* The whole sentence, once, for assistive technology. */}
+            <span className="sr-only">
+              Funding that actually reaches the ground.
             </span>
           </h1>
 
-          <div className="mt-12 flex flex-wrap items-center gap-4">
+          {/*
+            What the explosion uncovers. Every figure is read live from
+            /stats/public, which serves only values derivable from a row count
+            or a SUM — the reason this opening can put them at this size.
+          */}
+          <div className="op-figures mt-12 grid gap-x-10 gap-y-6 border-t border-[hsl(var(--paper)/0.15)] pt-7 sm:grid-cols-3">
+            {figures.map((figure) => (
+              <div key={figure.label}>
+                <p
+                  className="tnum font-grotesk text-3xl font-extrabold leading-none sm:text-4xl"
+                  style={{ fontStretch: "84%" }}
+                >
+                  {figure.value}
+                </p>
+                <p className="mt-2 text-xs leading-relaxed text-[hsl(var(--paper)/0.6)]">
+                  {figure.label}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <div className="op-chrome mt-10 flex flex-wrap items-center gap-4">
             <Link
               to="/browse"
               className="group inline-flex h-12 items-center gap-2 rounded-lg bg-[hsl(var(--paper))] px-6 text-sm font-semibold text-[hsl(var(--ink))] transition-all duration-200 ease-out-soft active:scale-[0.97]"
@@ -317,9 +255,13 @@ export function Opening() {
             >
               Browse grants
             </Link>
+            <span className="ml-auto hidden items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[hsl(var(--paper)/0.45)] sm:inline-flex">
+              <ArrowDown className="h-3 w-3" />
+              Scroll
+            </span>
           </div>
         </div>
-      </section>
+      </div>
     </div>
   );
 }
