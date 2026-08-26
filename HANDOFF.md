@@ -297,10 +297,24 @@ for.
 
 Nothing from the original list remains. Candidates if more is wanted:
 
-- The AI matcher itself could not be exercised end-to-end on 2026-08-26 —
-  Gemini's free tier returned 502 "high demand" on every attempt. The checklist
-  logic was verified directly against real grants and organisations, and the UI
-  was verified with a stubbed response; the model call itself was not.
+- ~~The AI matcher could not be exercised end-to-end~~ — **fixed and verified**.
+  The cause was not quota: `gemini-flash-latest` had stopped responding at all,
+  hanging until our own 30s abort fired. Pinned to `gemini-3.5-flash` and the
+  timeout raised to 60s. All three features now measured live: matcher 10.3s
+  (cache hit instant on the second call), funder summary 11.8s, NGO self-review
+  17.6s.
+
+  **If AI stalls again, start here** — this returns in under a second even while
+  generation hangs, and would have found it in one step:
+
+  ```bash
+  curl "https://generativelanguage.googleapis.com/v1beta/models?key=$GEMINI_API_KEY"
+  ```
+
+  Then try `:generateContent` on a candidate with `curl -m 30` before changing
+  any code. A model that HANGS surfaces as our own 504, which points the
+  investigation at our code rather than at Google's — that misdirection cost
+  most of the time spent on it.
 - Git is now initialised (branch `main`, one initial commit, **no remote yet**).
   `API keys.txt` holds live Razorpay and Gemini credentials and is gitignored —
   if this repo is ever pushed to GitHub, check that file never appears in a diff.
