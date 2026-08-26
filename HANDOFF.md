@@ -94,6 +94,18 @@ so the page looked empty.
 **Rule:** entrance animations start at `opacity: 0.3`, never `0`. Worst case is
 "briefly dim", never "gone". See `.row-enter` in `index.css`.
 
+**This now applies to EVERY keyframe** (2026-08-26): `fade-up`, `fade-in`,
+`scale-in` and `slide-down` in `tailwind.config.js` all started at zero, and
+`fade-up` is the workhorse behind `Reveal` and `.stagger` — most of the site's
+text. `fade-in`/`scale-in` are the dialog backdrop and panel, where a frozen
+first keyframe gives an invisible modal that has already trapped focus and
+locked scroll. All start at 0.3 now.
+
+`Reveal` had the same shape of bug from the other direction: it held at
+`opacity-0` until IntersectionObserver fired, so anywhere IO does not deliver
+(a renderer that never composites, a tab throttled during load) the hold was
+permanent. It holds at `opacity-30` now.
+
 ### 3.3 Art-directed sections use `--ink` / `--paper`
 
 The semantic tokens swap with the theme. A hero built on `--foreground` inverted
@@ -326,6 +338,25 @@ pnpm -r typecheck                              # 3 packages, must be clean
 pnpm --filter @impactbridge/api test:workflow  # 46 tests, all must pass
 pnpm --filter @impactbridge/web build          # confirm GSAP is NOT in the shared chunk
 ```
+
+A reusable page probe (install once in the preview tab, call per route) does
+the first four automatically: sweeps in half-viewport steps recording dead
+bands, measures the worst resting opacity of any text block, lists images
+rendered above their natural width, counts `h1`s, and pushes the window
+sideways to prove `scrollX` returns 0. Run it on every route after a front-end
+change; it found six real bugs in one pass on 2026-08-26.
+
+**Verify the probe before believing it.** Three artifacts of the preview tab
+have now each masqueraded as a bug:
+
+- `requestAnimationFrame` never fires, so GSAP and CSS animations freeze at
+  their first keyframe.
+- **`IntersectionObserver` never delivers**, so every `Reveal` reads as
+  invisible. Test IO on a known-visible element before concluding anything.
+- The pane can collapse to `0×0`, at which point every rectangle is garbage and
+  the layout looks catastrophically broken. Assert `innerWidth > 0` first, and
+  set an explicit viewport with `resize_window` rather than trusting the
+  "desktop" preset.
 
 Manual checks that each caught a real bug — run after front-end changes:
 
