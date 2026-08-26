@@ -278,8 +278,9 @@ Nothing from the original list remains. Candidates if more is wanted:
   Gemini's free tier returned 502 "high demand" on every attempt. The checklist
   logic was verified directly against real grants and organisations, and the UI
   was verified with a stubbed response; the model call itself was not.
-- The project is **not under version control**. There is a `.gitignore` but no
-  `.git`. Every rewrite in this session was backed up by hand instead.
+- Git is now initialised (branch `main`, one initial commit, **no remote yet**).
+  `API keys.txt` holds live Razorpay and Gemini credentials and is gitignored —
+  if this repo is ever pushed to GitHub, check that file never appears in a diff.
 
 ## 6. Environment gotchas
 
