@@ -317,13 +317,16 @@
   }
 
   /*
-   * The figures are what the explosion uncovers, so they gain weight as the
-   * letters lose it — and they start at 0.3 rather than 0 for the same reason
-   * as above.
+   * The wash between the exploding headline and the content crossing in front
+   * of it. Ink, deepening as you descend, so the figures stay legible no matter
+   * where the letters have drifted — the same job the F1 dashboard's 60%-ink
+   * scenes do over its exploded car.
+   *
+   * It starts at nothing: the first screen is the headline alone, at full
+   * strength, with no veil over it.
    */
-  .op-scrub .op-figures {
-    opacity: calc(0.3 + var(--op-p, 0) * 1.4);
-    transform: translateY(calc((0.45 - var(--op-p, 0)) * 46px));
+  .op-scrub .op-wash {
+    background: hsl(var(--ink) / calc(var(--op-p, 0) * 0.82));
   }
 
   /* The eyebrow and the buttons belong to the headline, so they leave with it. */

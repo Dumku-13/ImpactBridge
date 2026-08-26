@@ -128,6 +128,38 @@ heavy scrim, and the scrim bleaches the footage. Texture reads as depth at any
 opacity. **Only `tree-loop` is currently used** — the user explicitly cut the
 water and the walking-person footage.
 
+### 3.5b Scroll-linked motion: one variable, gated behind a class
+
+The landing opening (`components/home/Opening.tsx` + the `.op-*` rules in
+`index.css`) uses no animation library at all. A rAF-throttled listener writes a
+single custom property — `--op-p`, 0 → 1 — onto the zone and adds `.op-scrub`;
+every movement is a `calc()` off that variable. Lifted from the F1 dashboard's
+`--hero-p`, and worth preferring for any new scroll scene, for three reasons:
+
+- **It is testable.** Arithmetic on a variable can be driven by hand and
+  measured. The explode was verified at p = 0 / 0.3 / 0.6 / 1 in a browser that
+  never composites a frame — a GSAP timeline cannot be inspected that way, which
+  is why every earlier scroll effect here could only be checked for *mechanism*.
+- **The base state is the readable state.** Rules live behind `.op-scrub`, which
+  only JS adds, so reduced motion / no JS / a thrown script leaves a still,
+  legible headline instead of an empty field.
+- One property write per frame, no React render, no library on the path.
+
+**Background-explode structure** (also from the F1 dashboard, where a car
+explodes behind the editorial scenes):
+
+```
+zone (3.4 screens)
+├── sticky top-0, h-svh, -mb-[100svh]   ← background: the headline + an ink wash
+└── relative z-10                        ← foreground: figures scrolling over it
+```
+
+The negative bottom margin on the sticky element is what pulls the foreground up
+over it. This is NOT a pin — §3.1 still holds — and the combination was swept at
+quarter-viewport steps for the blank band that pattern is famous for. Verified
+mid-zone: a figure block in front, 23 headline characters still visible behind
+it at 0.64 opacity, wash at 45%.
+
 ### 3.6 GSAP hygiene
 
 - Always inside `gsap.context(..., root)` with `ctx.revert()` on unmount.
