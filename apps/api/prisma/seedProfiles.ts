@@ -102,7 +102,10 @@ const COLLEAGUES: Record<string, Array<{ name: string; role: string; bio: string
     {
       name: "Anjali Verma",
       role: "Programme Lead, Learning Centres",
-      bio: "Runs the eleven centres and the teacher training that keeps them staffed.",
+      /* No centre count here on purpose: the number of learning centres is an
+         impact metric the organisation authors itself, and a figure duplicated
+         into a bio is a figure that will eventually contradict it. */
+      bio: "Runs the learning centres and the teacher training that keeps them staffed.",
     },
     {
       name: "Suresh Kamble",

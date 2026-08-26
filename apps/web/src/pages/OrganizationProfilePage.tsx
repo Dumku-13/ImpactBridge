@@ -120,8 +120,85 @@ export function OrganizationProfilePage() {
       <OrgOpening org={org} />
 
       <div className="grid gap-14 pt-16 lg:grid-cols-[1fr_360px] lg:gap-12">
+        {/*
+          Deliberately FIRST in the DOM, and moved to the second column at `lg`
+          with `order`.
+
+          Written the other way round — main column first, `order-first` on the
+          aside for small screens — it looked identical and was wrong: CSS
+          `order` moves pixels, not the accessibility tree or the tab sequence,
+          so a keyboard or screen-reader user still met the donate form last,
+          after four chapters. This way the visual order, the reading order and
+          the tab order all agree at every width.
+
+          It matters because of where this sat before: on a 375px screen the
+          donate card began at 4341px of a 4654px page — a phone donor had to
+          scroll past the entire profile to reach the one control the page
+          exists for.
+        */}
+        <aside className="space-y-4 lg:order-2 lg:sticky lg:top-24 lg:self-start">
+          <div className="border-t border-border pt-4">
+            <p
+              className="tnum font-grotesk text-3xl font-extrabold leading-none tracking-[-0.02em] text-foreground"
+              style={{ fontStretch: "88%" }}
+            >
+              {formatMoney(org.totalRaisedMinor, org.currency)}
+            </p>
+            <p className="mt-1.5 text-sm text-muted-foreground">
+              raised of {formatMoneyCompact(org.fundingGoalMinor, org.currency)}{" "}
+              goal
+            </p>
+
+            <ProgressBar
+              value={progress}
+              className="mt-3"
+              label={`${org.name} funding progress`}
+            />
+            <p className="tnum mt-2 text-xs text-muted-foreground">
+              {progress}% funded · {org.donorCount.toLocaleString("en-IN")}{" "}
+              donors
+            </p>
+          </div>
+
+          <DonateCard organization={org} />
+
+          <VerificationPanel verified={org.verified} verifiedAt={org.verifiedAt} />
+
+          {isDonor && (
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                fullWidth
+                onClick={() => toggleBookmark.mutate(org.id)}
+                aria-pressed={org.isBookmarked}
+              >
+                <Bookmark
+                  className={cn(
+                    "h-4 w-4",
+                    org.isBookmarked && "fill-primary text-primary",
+                  )}
+                />
+                {org.isBookmarked ? "Saved" : "Save"}
+              </Button>
+              <Button
+                variant="outline"
+                fullWidth
+                onClick={() => toggleFollow.mutate(org.id)}
+                aria-pressed={org.isFollowing}
+              >
+                <Bell
+                  className={cn(
+                    "h-4 w-4",
+                    org.isFollowing && "fill-primary text-primary",
+                  )}
+                />
+                {org.isFollowing ? "Following" : "Follow"}
+              </Button>
+            </div>
+          )}
+        </aside>
         {/* ── The account ──────────────────────────────────────────────── */}
-        <div className="min-w-0 space-y-16">
+        <div className="min-w-0 space-y-16 lg:order-1">
           {org.description && (
             <Chapter index="01" label="The work">
               <Reveal>
@@ -242,67 +319,6 @@ export function OrganizationProfilePage() {
           figures, but they scroll away — and a donor who has just read the
           team's bios should not have to scroll back up to act.
         */}
-        <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
-          <div className="border-t border-border pt-4">
-            <p
-              className="tnum font-grotesk text-3xl font-extrabold leading-none tracking-[-0.02em] text-foreground"
-              style={{ fontStretch: "88%" }}
-            >
-              {formatMoney(org.totalRaisedMinor, org.currency)}
-            </p>
-            <p className="mt-1.5 text-sm text-muted-foreground">
-              raised of {formatMoneyCompact(org.fundingGoalMinor, org.currency)}{" "}
-              goal
-            </p>
-
-            <ProgressBar
-              value={progress}
-              className="mt-3"
-              label={`${org.name} funding progress`}
-            />
-            <p className="tnum mt-2 text-xs text-muted-foreground">
-              {progress}% funded · {org.donorCount.toLocaleString("en-IN")}{" "}
-              donors
-            </p>
-          </div>
-
-          <DonateCard organization={org} />
-
-          <VerificationPanel verified={org.verified} verifiedAt={org.verifiedAt} />
-
-          {isDonor && (
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                fullWidth
-                onClick={() => toggleBookmark.mutate(org.id)}
-                aria-pressed={org.isBookmarked}
-              >
-                <Bookmark
-                  className={cn(
-                    "h-4 w-4",
-                    org.isBookmarked && "fill-primary text-primary",
-                  )}
-                />
-                {org.isBookmarked ? "Saved" : "Save"}
-              </Button>
-              <Button
-                variant="outline"
-                fullWidth
-                onClick={() => toggleFollow.mutate(org.id)}
-                aria-pressed={org.isFollowing}
-              >
-                <Bell
-                  className={cn(
-                    "h-4 w-4",
-                    org.isFollowing && "fill-primary text-primary",
-                  )}
-                />
-                {org.isFollowing ? "Following" : "Follow"}
-              </Button>
-            </div>
-          )}
-        </aside>
       </div>
     </div>
   );

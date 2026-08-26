@@ -111,7 +111,7 @@ const ORGANISATIONS: DemoOrg[] = [
     ratingCount: 96,
     verified: true,
     coverUrl:
-      "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=1200&q=80",
+      "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=2000&q=80",
     metrics: [
       { label: "Students supported", value: "3,200", unit: "since 2014" },
       { label: "Class 12 completion", value: "94%" },
@@ -140,7 +140,7 @@ const ORGANISATIONS: DemoOrg[] = [
     ratingCount: 184,
     verified: true,
     coverUrl:
-      "https://images.unsplash.com/photo-1516574187841-cb9cc2ca948b?w=1200&q=80",
+      "https://images.unsplash.com/photo-1516574187841-cb9cc2ca948b?w=2000&q=80",
     metrics: [
       { label: "Patients treated", value: "58,000", unit: "lifetime" },
       { label: "Villages served", value: "94" },
@@ -169,7 +169,7 @@ const ORGANISATIONS: DemoOrg[] = [
     ratingCount: 61,
     verified: true,
     coverUrl:
-      "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=1200&q=80",
+      "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=2000&q=80",
     metrics: [
       { label: "Women in programme", value: "2,880" },
       { label: "Average income increase", value: "4.1×" },
@@ -198,7 +198,7 @@ const ORGANISATIONS: DemoOrg[] = [
     ratingCount: 47,
     verified: true,
     coverUrl:
-      "https://images.unsplash.com/photo-1552053831-71594a27632d?w=1200&q=80",
+      "https://images.unsplash.com/photo-1552053831-71594a27632d?w=2000&q=80",
     metrics: [
       { label: "Animals sterilised", value: "11,400" },
       { label: "Rabies vaccinations", value: "18,900" },
@@ -227,7 +227,7 @@ const ORGANISATIONS: DemoOrg[] = [
     ratingCount: 212,
     verified: true,
     coverUrl:
-      "https://images.unsplash.com/photo-1547683905-f686c993aae5?w=1200&q=80",
+      "https://images.unsplash.com/photo-1547683905-f686c993aae5?w=2000&q=80",
     metrics: [
       { label: "People reached", value: "146,000" },
       { label: "Deployments", value: "38" },
@@ -256,7 +256,7 @@ const ORGANISATIONS: DemoOrg[] = [
     ratingCount: 138,
     verified: true,
     coverUrl:
-      "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1200&q=80",
+      "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=2000&q=80",
     metrics: [
       { label: "Hectares restored", value: "1,240" },
       { label: "Native saplings planted", value: "310,000" },
@@ -285,7 +285,7 @@ const ORGANISATIONS: DemoOrg[] = [
     ratingCount: 28,
     verified: false,
     coverUrl:
-      "https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=1200&q=80",
+      "https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=2000&q=80",
     metrics: [
       { label: "Graduates placed", value: "1,150" },
       { label: "Placement rate", value: "78%" },
@@ -314,7 +314,7 @@ const ORGANISATIONS: DemoOrg[] = [
     ratingCount: 73,
     verified: true,
     coverUrl:
-      "https://images.unsplash.com/photo-1594398901394-4e34939a4fd0?w=1200&q=80",
+      "https://images.unsplash.com/photo-1594398901394-4e34939a4fd0?w=2000&q=80",
     metrics: [
       { label: "Villages with year-round water", value: "68" },
       { label: "Litres recharged annually", value: "410M" },
