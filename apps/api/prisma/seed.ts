@@ -89,8 +89,12 @@ const ORGANISATIONS: DemoOrg[] = [
   {
     slug: "vidya-jyoti-foundation",
     name: "Vidya Jyoti Foundation",
-    mission:
-      "Keeping first-generation learners in school through to Class 12.",
+    /*
+     * Edited through the NGO dashboard and kept — the line lives here, not just
+     * in the database, because `db:seed` rewrites `mission` on every run and a
+     * change made only to the row would silently revert on the next re-seed.
+     */
+    mission: "Education for rural girls in Karnataka",
     description:
       "Vidya Jyoti runs after-school learning centres in low-income neighbourhoods of Pune, where most of our students are the first in their family to attend school. We combine daily academic support with a monthly stipend that offsets the income a child would otherwise earn, which is the single biggest reason families pull students out early. Every centre is staffed by teachers hired from the same community.",
     categories: ["education"],
