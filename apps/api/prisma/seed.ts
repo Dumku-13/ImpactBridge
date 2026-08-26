@@ -383,6 +383,15 @@ async function main() {
      *
      * `set` (not `connect`) on categories replaces the relation wholesale, so
      * removing a category from this file removes it from the database too.
+     *
+     * Two fields are deliberately NOT in here, and are applied on create only
+     * (see `seedOnlyOnCreate` below): the running money totals. Once
+     * `seedDonations.ts` has run they are derived from real Donation rows, and
+     * re-seeding to restore profile text would overwrite them with the static
+     * figures in this file — a demo whose "raised" figure no longer matches its
+     * own donation history. That risk is the only reason `db:seed` was
+     * previously unsafe to re-run, which in turn is how one organisation sat
+     * with its profile wiped for weeks.
      */
     const organizationData = {
       name: org.name,
@@ -395,14 +404,9 @@ async function main() {
       latitude: org.latitude,
       longitude: org.longitude,
       status: "ACTIVE" as const,
-      // Always written as a pair — the flag for querying, the timestamp for audit.
-      verified: org.verified,
-      verifiedAt: org.verified ? new Date() : null,
       rating: org.rating,
       ratingCount: org.ratingCount,
       fundingGoalMinor: org.fundingGoal,
-      totalRaisedMinor: org.totalRaised,
-      donorCount: org.donorCount,
       coverUrl: org.coverUrl,
       website: org.website,
       contactEmail: org.owner.email,
@@ -410,6 +414,30 @@ async function main() {
     };
 
     const categoryRefs = org.categories.map((slug) => ({ slug }));
+
+    /*
+     * Values this file may PROPOSE but must never IMPOSE.
+     *
+     * Each one is authored at runtime by somebody with more authority than a
+     * seed file, and re-running the seed to restore profile text must not undo
+     * their work:
+     *
+     *  - the money totals are recomputed from real Donation rows by
+     *    `seedDonations.ts`; the static figures here would contradict the
+     *    donation history the platform can actually show.
+     *  - verification is a decision a platform admin made and the audit log
+     *    recorded. A re-seed silently unverifying an organisation would be the
+     *    platform contradicting its own audit trail — on a product whose entire
+     *    argument is that every decision is traceable.
+     *
+     * Written as a pair: the flag for querying, the timestamp for display.
+     */
+    const seedOnlyOnCreate = {
+      totalRaisedMinor: org.totalRaised,
+      donorCount: org.donorCount,
+      verified: org.verified,
+      verifiedAt: org.verified ? new Date() : null,
+    };
 
     const organization = await prisma.organization.upsert({
       where: { slug: org.slug },
@@ -419,6 +447,7 @@ async function main() {
       create: {
         slug: org.slug,
         ...organizationData,
+        ...seedOnlyOnCreate,
         categories: { connect: categoryRefs },
       },
     });
