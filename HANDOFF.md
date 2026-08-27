@@ -160,6 +160,40 @@ quarter-viewport steps for the blank band that pattern is famous for. Verified
 mid-zone: a figure block in front, 23 headline characters still visible behind
 it at 0.64 opacity, wash at 45%.
 
+### 3.5c The page thread, and the z-layer it needs
+
+`components/home/PageThread.tsx` draws ONE line down the whole landing page —
+`getTotalLength()`, `stroke-dasharray`, and a `stroke-dashoffset` scrubbed by
+scroll, the technique from the GSAP squiggle reference. Two rules from that
+reference are honoured deliberately:
+
+- **The trigger is the wrapping DIV, never the SVG.** SVG internals live in
+  their own coordinate space and cannot be measured against the viewport.
+- **The range is clamped**: the draw starts when the region's top reaches the
+  middle of the screen and ends when its bottom does — `clamp(top center)` →
+  `clamp(bottom center)`, done in arithmetic.
+
+**The layering rule, which is easy to break by accident:**
+
+```
+z-5   the thread          (above every section BACKGROUND)
+z-10  every text column   (above the thread)
+```
+
+Every section's content wrapper on the landing page carries `relative z-10` for
+this reason. Without it the line crosses the copy — verified: all 25 sample
+points along the path fall inside the content column, so this is not a
+hypothetical. If you add a section to the landing page, give its inner column
+`relative z-10` or the thread will scribble over it.
+
+The line is drawn twice: a dark halo at 7px under a 3px gradient stroke, because
+the page runs ink → paper → ink and one colour cannot survive both. The gradient
+runs marigold → white top to bottom, so the colour reports depth.
+
+`PageThread` takes a `className` and measures whatever box it is placed in, so
+it can be dropped into any page that has a `relative` wrapper — the same
+z-5/z-10 rule applies there.
+
 ### 3.6 GSAP hygiene
 
 - Always inside `gsap.context(..., root)` with `ctx.revert()` on unmount.

@@ -138,31 +138,6 @@ export function Opening() {
      * and written as `--len`, after which the draw is pure arithmetic on
      * `--op-p` like everything else.
      */
-    const route = root.querySelector<SVGPathElement>(".op-route-line");
-    if (route) {
-      const length = route.getTotalLength();
-      root.style.setProperty("--len", String(Math.ceil(length)));
-
-      /*
-       * Waypoints are placed ON the line rather than beside it, by asking the
-       * path where it is at a given fraction of its length. Positioning them by
-       * hand would mean re-deriving three coordinates every time the curve
-       * changes, and they would drift out of true the first time anyone edited
-       * the `d` attribute.
-       *
-       * They are HTML, not SVG: the box uses `preserveAspectRatio="none"`, so
-       * anything drawn inside it stretches with the viewport — a circle would
-       * render as an ellipse and text would shear. Percentages of the same box
-       * do not distort.
-       */
-      for (const node of root.querySelectorAll<HTMLElement>(".op-route-node")) {
-        const at = Number(node.dataset.at ?? 0);
-        const point = route.getPointAtLength(length * at);
-        node.style.left = `${point.x}%`;
-        node.style.top = `${point.y}%`;
-      }
-    }
-
     root.classList.add("op-scrub");
 
     let frame = 0;
@@ -381,72 +356,7 @@ export function Opening() {
           </h1>
         </div>
 
-        {/*
-          ── The route ───────────────────────────────────────────────────────
-          The way a rupee comes down this page, drawn as you scroll. It sits
-          ABOVE the wash, so it stays bright while the exploded letters behind
-          it are dimmed — the line is the one thing that gets clearer as you
-          descend, everything else recedes.
 
-          `preserveAspectRatio="none"` is deliberate: the box is a viewport, not
-          an illustration, and the path is a plain curve whose proportions do
-          not matter. Stroke width is compensated by `vector-effect`.
-        */}
-        <svg
-          aria-hidden="true"
-          viewBox="0 0 100 100"
-          preserveAspectRatio="none"
-          className="pointer-events-none absolute inset-0 z-[1] h-full w-full"
-        >
-          <defs>
-            <linearGradient id="op-route-grad" x1="0" y1="0" x2="0" y2="1">
-              {/* Marigold at the top, paper at the bottom: the colour reports
-                  how far down the page you have come. */}
-              <stop offset="0%" stopColor="hsl(var(--accent))" />
-              <stop offset="55%" stopColor="hsl(var(--accent))" stopOpacity="0.85" />
-              <stop offset="100%" stopColor="hsl(var(--paper))" />
-            </linearGradient>
-          </defs>
-
-          <path
-            className="op-route-line"
-            d="M 8 -2 C 8 18, 34 22, 34 38 C 34 54, 68 52, 68 68 C 68 84, 46 88, 46 104"
-            fill="none"
-            stroke="url(#op-route-grad)"
-            strokeWidth="2"
-            strokeLinecap="round"
-            /* Keeps the stroke an even 2px however the box is stretched. */
-            vectorEffect="non-scaling-stroke"
-          />
-        </svg>
-
-        {/*
-          Waypoints: what the line passes through on its way down. Each one
-          appears as the draw reaches it — `--at` is the progress at which the
-          route arrives, and the fade is a `calc()` on the same variable.
-
-          These are the three stages the figures in front are describing, so the
-          line and the copy are telling one story rather than two.
-        */}
-        <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-[2]">
-          {[
-            { at: 0.16, label: "Donor gives" },
-            { at: 0.52, label: "Platform records it" },
-            { at: 0.88, label: "Work gets funded" },
-          ].map((node) => (
-            <span
-              key={node.label}
-              data-at={node.at}
-              className="op-route-node absolute flex -translate-x-1/2 -translate-y-1/2 items-center gap-2"
-              style={{ ["--at" as string]: node.at }}
-            >
-              <span className="h-2 w-2 rounded-full bg-[hsl(var(--paper))] ring-4 ring-[hsl(var(--ink)/0.6)]" />
-              <span className="whitespace-nowrap text-[10px] font-semibold uppercase tracking-[0.18em] text-[hsl(var(--paper)/0.75)]">
-                {node.label}
-              </span>
-            </span>
-          ))}
-        </div>
 
         {/*
           The wash. Strengthens as you descend so the figures crossing in front

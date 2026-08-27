@@ -6,6 +6,7 @@ import { homeForRole } from "@/auth/routes";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { Opening } from "@/components/home/Opening";
 import { ScrollSpine } from "@/components/home/ScrollSpine";
+import { PageThread } from "@/components/home/PageThread";
 import { Premise } from "@/components/home/Premise";
 import { FundingFlow } from "@/components/home/FundingFlow";
 import { StoryRail } from "@/components/home/StoryRail";
@@ -103,7 +104,15 @@ export function HomePage() {
 
       <ScrollSpine sections={[...SPINE]} />
 
-      <main>
+      {/*
+        `relative` so the thread can span exactly this box — the whole run of
+        sections — and nothing else. It is the thread's scroll region as well as
+        its canvas, which is why it is measured from here rather than from the
+        document: the footer should not be part of the draw.
+      */}
+      <main className="relative">
+        <PageThread />
+
         <div id="opening">
           <Opening />
         </div>

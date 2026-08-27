@@ -42,7 +42,8 @@ export function StatBand() {
 
   return (
     <section className="border-t border-border bg-background py-20 sm:py-24">
-      <div className="mx-auto max-w-6xl px-6">
+      {/* Above the page thread (z-5), which passes behind this column. */}
+      <div className="relative z-10 mx-auto max-w-6xl px-6">
         <Reveal>
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
             Built for transparent funding

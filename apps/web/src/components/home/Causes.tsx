@@ -159,7 +159,8 @@ function CausePanel({
 export function Causes() {
   return (
     <section className="relative border-t border-border bg-background py-20 sm:py-24">
-      <div className="mx-auto max-w-7xl px-6">
+      {/* Above the page thread (z-5), which passes behind this column. */}
+      <div className="relative z-10 mx-auto max-w-7xl px-6">
         <div className="max-w-2xl">
           <Reveal>
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">

@@ -246,7 +246,8 @@ export function StoryRail() {
          `html, body { overflow-x: clip }` is set globally — see HANDOFF §3.4. */
       className="relative left-1/2 w-screen -translate-x-1/2 border-y border-[hsl(var(--paper)/0.12)] bg-[hsl(var(--ink))] py-20 text-[hsl(var(--paper))] sm:py-24"
     >
-      <div className="mx-auto max-w-7xl px-6">
+      {/* Above the page thread (z-5), which passes behind this column. */}
+      <div className="relative z-10 mx-auto max-w-7xl px-6">
         <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[hsl(var(--paper)/0.55)]">
           The work itself
         </p>
@@ -301,7 +302,7 @@ export function StoryRail() {
            * jitters between two. Snapping is for a rail a thumb flicks; this
            * one is driven by the page scrollbar, which is already smooth.
            */
-          "mt-14 flex gap-8 overflow-x-auto pb-6 sm:gap-12",
+          "relative z-10 mt-14 flex gap-8 overflow-x-auto pb-6 sm:gap-12",
           // Matches `max-w-7xl` + `px-6` at wide viewports so the first card
           // sits under the headline rather than at the raw window edge.
           "pl-6 pr-6 [scrollbar-width:thin] xl:pl-[max(1.5rem,calc((100vw-80rem)/2+1.5rem))]",

@@ -106,7 +106,8 @@ export function FundingFlow() {
         className="absolute inset-0 bg-gradient-to-b from-background via-background/70 to-background"
       />
 
-      <div ref={sectionRef} className="relative mx-auto max-w-5xl px-6 py-20 sm:py-24">
+      {/* `z-10`: above the page thread, which passes behind this column. */}
+      <div ref={sectionRef} className="relative z-10 mx-auto max-w-5xl px-6 py-20 sm:py-24">
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
           How a rupee travels
         </p>

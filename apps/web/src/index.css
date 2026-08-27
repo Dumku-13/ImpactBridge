@@ -353,35 +353,28 @@
   }
 
   /*
-   * ── The route ─────────────────────────────────────────────────────────────
+   * ── The page thread ───────────────────────────────────────────────────────
    *
-   * A path that draws itself as you descend, rather than a straight progress
-   * bar: the rupee's way down the page. The line's total length is measured
-   * once in JS and written to `--len`, so the draw is one `calc()` on the same
-   * `--op-p` everything else here uses.
-   *
-   * The stroke is a gradient from marigold to paper — it arrives yellow and
-   * ends white, so the colour itself reports how far down you are.
+   * One line drawn down the whole landing page. `--len` is the path length,
+   * measured in JS because CSS cannot ask for it; `--th-p` is the scroll
+   * progress across the region. Undrawn at rest and gated behind `.th-scrub`,
+   * so a browser that never runs the script simply has no line — it is
+   * decorative and carries no information the page needs.
    */
-  .op-route-line {
-    stroke-dasharray: var(--len, 1000);
-    /* Undrawn at rest is CORRECT here, unlike text: a route that is already
-       complete before you scroll has nothing to say. It is decorative, carries
-       no information of its own, and the section is legible without it. */
-    stroke-dashoffset: var(--len, 1000);
+  .th-line {
+    stroke-dasharray: var(--len, 2000);
+    stroke-dashoffset: var(--len, 2000);
   }
 
-  .op-scrub .op-route-line {
-    stroke-dashoffset: calc(var(--len, 1000) * (1 - var(--op-p, 0)));
+  .th-scrub .th-line {
+    stroke-dashoffset: calc(var(--len, 2000) * (1 - var(--th-p, 0)));
   }
 
-  /*
-   * Waypoints. Each carries its own `--at`, the progress at which the line
-   * reaches it, and fades up as the draw passes — `(p - at) * 12` crosses 0→1
-   * over about 8% of the travel, which is a snap rather than a slow bloom.
-   */
-  .op-scrub .op-route-node {
-    opacity: calc((var(--op-p, 0) - var(--at, 0)) * 12);
+  /* Vibrance: a soft bloom around the bright stroke only, so the line glows
+     rather than merely being coloured. Applied to the stroke, not the halo,
+     which would smear the dark under-path into a shadow. */
+  .th-line--bright {
+    filter: drop-shadow(0 0 6px hsl(var(--accent) / 0.45));
   }
 
   /* The eyebrow and the buttons belong to the headline, so they leave with it. */

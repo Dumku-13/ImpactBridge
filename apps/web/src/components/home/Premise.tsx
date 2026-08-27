@@ -12,7 +12,10 @@ import { Reveal } from "@/components/ui/Reveal";
 export function Premise() {
   return (
     <section className="relative bg-background py-20 sm:py-24">
-      <div className="mx-auto max-w-6xl px-6">
+      {/* `relative z-10`: the page thread is drawn at z-5, above section
+          backgrounds and below every block of copy. Without this the line
+          crosses the text instead of passing behind it. */}
+      <div className="relative z-10 mx-auto max-w-6xl px-6">
         <Reveal>
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
             The premise
