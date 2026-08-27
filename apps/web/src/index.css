@@ -370,12 +370,15 @@
     stroke-dashoffset: calc(var(--len, 2000) * (1 - var(--th-p, 0)));
   }
 
-  /* Vibrance: a soft bloom around the bright stroke only, so the line glows
-     rather than merely being coloured. Applied to the stroke, not the halo,
-     which would smear the dark under-path into a shadow. */
-  .th-line--bright {
-    filter: drop-shadow(0 0 6px hsl(var(--accent) / 0.45));
-  }
+  /*
+   * NO filter here, deliberately.
+   *
+   * There was a `drop-shadow` for glow. A filter makes the browser recompute
+   * its entire filter region on every repaint, and this element is the whole
+   * page — 13.6 megapixels — repainting on every scroll frame. It lagged the
+   * site. The dark halo path underneath does the legibility job the glow was
+   * really doing, for the cost of one extra stroke.
+   */
 
   /* The eyebrow and the buttons belong to the headline, so they leave with it. */
   .op-scrub .op-chrome {
