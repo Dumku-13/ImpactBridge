@@ -1,8 +1,10 @@
 import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import { ArrowDown, ArrowRight } from "lucide-react";
+import { ArrowDown, ArrowRight, Check } from "lucide-react";
 import { formatMoneyCompact } from "@impactbridge/shared";
 import { usePublicStats } from "@/api/stats";
+import { useOrganizations } from "@/api/organizations";
+import { useGrants } from "@/api/grants";
 import { prefersReducedMotion } from "@/lib/gsap";
 
 /**
@@ -73,6 +75,20 @@ function SplitLine({ text, className }: { text: string; className?: string }) {
 export function Opening() {
   const rootRef = useRef<HTMLDivElement>(null);
   const { data: stats } = usePublicStats();
+
+  /*
+   * The records behind the figures.
+   *
+   * Both endpoints are public and already used by Browse and Grants, so this
+   * costs two cached requests and no new server code. They exist because the
+   * right-hand half of these screens was empty ink: a paragraph floating in a
+   * void with the exploded headline drifting past it. Filling that with texture
+   * was the wrong instinct — the honest fill is the evidence itself. A number
+   * claiming "8 organisations verified" is worth more when the eight are named
+   * beside it.
+   */
+  const { data: organizations } = useOrganizations({ pageSize: 8, sort: "most-funded" });
+  const { data: openGrants } = useGrants({ openOnly: true, pageSize: 4, sort: "deadline" });
 
   useEffect(() => {
     const root = rootRef.current;
@@ -191,22 +207,123 @@ export function Opening() {
 
   const currency = stats?.currency ?? "inr";
 
-  /** Each one scrolls over the exploding headline on a screen of its own. */
+  const topOrganizations = organizations?.items ?? [];
+  const grants = openGrants?.items ?? [];
+  /* The biggest raiser sets the scale for the bars, so the longest is full
+     width and the rest are honestly proportional to it — never a fixed ramp. */
+  const largestRaised = Math.max(
+    1,
+    ...topOrganizations.map((organization) => organization.totalRaisedMinor),
+  );
+
+  /**
+   * Each screen: the figure on the left, the RECORDS BEHIND IT on the right.
+   *
+   * The panel is the point. A statistic on an empty field is a claim; the same
+   * statistic beside the rows it was computed from is a receipt, and this
+   * product's entire argument is that it can show the rows.
+   */
   const figures = [
     {
       value: stats ? formatMoneyCompact(stats.totalRaisedMinor, currency) : "—",
       label: "given so far",
-      body: "Summed from completed donations — not pledges, not intentions. Every one of them has a receipt with a number on it.",
+      body: "Summed from completed donations — not pledges, not intentions. Every one has a receipt with a number on it.",
+      panelTitle: "Where it went",
+      rows: topOrganizations.length,
+      emptyLine: "Fetching the organisations this was given to…",
+      panel: (
+        <ul className="space-y-3.5">
+          {topOrganizations.slice(0, 6).map((organization) => (
+            <li key={organization.id}>
+              <div className="flex items-baseline justify-between gap-4">
+                <span className="truncate text-sm text-[hsl(var(--paper)/0.82)]">
+                  {organization.name}
+                </span>
+                <span className="tnum shrink-0 text-sm font-semibold text-accent">
+                  {formatMoneyCompact(organization.totalRaisedMinor, organization.currency)}
+                </span>
+              </div>
+              {/* Proportional to the largest raiser, so the bars compare
+                  against each other rather than against nothing. */}
+              <div className="mt-1.5 h-px w-full bg-[hsl(var(--paper)/0.12)]">
+                <div
+                  className="h-full bg-[hsl(var(--paper)/0.55)]"
+                  style={{
+                    width: `${Math.max(4, Math.round((organization.totalRaisedMinor / largestRaised) * 100))}%`,
+                  }}
+                />
+              </div>
+            </li>
+          ))}
+        </ul>
+      ),
     },
     {
       value: stats ? `${stats.verifiedOrganizations}/${stats.organizations}` : "—",
       label: "organisations verified",
       body: "A person read their registration documents and signed off before the page went live. The date of that decision is printed on every profile.",
+      panelTitle: "Checked, one by one",
+      rows: topOrganizations.length,
+      emptyLine: "Fetching the verification record…",
+      panel: (
+        <ul className="grid grid-cols-2 gap-x-6 gap-y-3">
+          {topOrganizations.map((organization) => (
+            <li
+              key={organization.id}
+              className="flex items-baseline gap-2 border-b border-[hsl(var(--paper)/0.1)] pb-2"
+            >
+              <Check
+                className={
+                  organization.verified
+                    ? "h-3 w-3 shrink-0 translate-y-0.5 text-primary"
+                    : "h-3 w-3 shrink-0 translate-y-0.5 text-[hsl(var(--paper)/0.3)]"
+                }
+              />
+              <span className="min-w-0 flex-1 truncate text-xs text-[hsl(var(--paper)/0.8)]">
+                {organization.name}
+              </span>
+              <span className="shrink-0 text-[10px] uppercase tracking-[0.12em] text-[hsl(var(--paper)/0.4)]">
+                {organization.city ?? "—"}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ),
     },
     {
       value: stats ? String(stats.openGrants) : "—",
       label: "grants open right now",
       body: "Each publishes its eligibility rules, its deadline and the size of its fund up front — and every decision made on it is written to an audit log.",
+      panelTitle: "Taking applications",
+      rows: grants.length,
+      emptyLine: "Fetching the grants currently open…",
+      panel: (
+        <ul className="space-y-4">
+          {grants.map((grant) => {
+            const daysLeft = Math.max(
+              0,
+              Math.ceil((new Date(grant.deadline).getTime() - Date.now()) / 86_400_000),
+            );
+
+            return (
+              <li key={grant.id} className="border-b border-[hsl(var(--paper)/0.12)] pb-4">
+                <p className="text-sm font-semibold text-[hsl(var(--paper)/0.9)]">
+                  {grant.title}
+                </p>
+                <p className="tnum mt-1.5 flex flex-wrap items-baseline gap-x-4 text-xs text-[hsl(var(--paper)/0.55)]">
+                  <span className="font-semibold text-accent">
+                    {formatMoneyCompact(grant.amountMinor, grant.currency)}
+                  </span>
+                  <span>{daysLeft} days left</span>
+                  <span>
+                    {grant.categories.slice(0, 2).map((category) => category.name).join(" · ")}
+                  </span>
+                </p>
+              </li>
+            );
+          })}
+        </ul>
+      ),
     },
   ];
 
@@ -362,48 +479,61 @@ export function Opening() {
         {figures.map((figure, index) => (
           <section
             key={figure.label}
-            className="flex min-h-[80svh] items-center px-6 py-16"
+            className="flex min-h-[85svh] items-center px-6 py-16"
           >
-            <div className="mx-auto flex w-full max-w-[110rem] items-center justify-between gap-10">
-              <div className="max-w-xl border-l-2 border-primary pl-6 sm:pl-8">
+            <div className="mx-auto grid w-full max-w-[110rem] items-center gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-20">
+              {/* ── The figure ─────────────────────────────────────────── */}
+              <div className="border-l-2 border-primary pl-6 sm:pl-8">
+                <p className="tnum text-[10px] font-semibold uppercase tracking-[0.24em] text-[hsl(var(--paper)/0.45)]">
+                  {String(index + 1).padStart(2, "0")} / 03
+                </p>
                 <p
-                  className="tnum font-grotesk font-extrabold leading-none text-[hsl(var(--paper))]"
-                  style={{ fontStretch: "80%", fontSize: "clamp(3rem, 8vw, 7rem)" }}
+                  className="tnum mt-5 font-grotesk font-extrabold leading-none text-[hsl(var(--paper))]"
+                  style={{ fontStretch: "76%", fontSize: "clamp(3.5rem, 9vw, 8rem)" }}
                 >
                   {figure.value}
                 </p>
                 <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">
                   {figure.label}
                 </p>
-                <p className="mt-5 text-base leading-relaxed text-[hsl(var(--paper)/0.72)]">
+                <p className="mt-5 max-w-md text-base leading-relaxed text-[hsl(var(--paper)/0.72)]">
                   {figure.body}
                 </p>
               </div>
 
               {/*
-                The step numeral. The right of these screens was a void — the
-                copy is a single column and the exploded letters have long since
-                left the frame by the time the third one arrives, so the section
-                read as half-loaded. An outlined numeral fills it with structure
-                rather than decoration: it says which of three you are on, which
-                is the one thing the copy alone does not tell you.
+                ── The records behind it ────────────────────────────────────
+                This half of the screen was empty ink. Texture did not fix it
+                and a giant outlined numeral did not either — both were
+                decoration standing in for content. What belongs here is the
+                evidence: the organisations, their money, the live grants. Real
+                rows, from the same public endpoints Browse and Grants use.
 
-                Outlined, not filled, so it never competes with the figure it
-                sits beside. Hidden on small screens, where there is no void to
-                fill in the first place.
+                Slightly translucent over the exploding headline, so the letters
+                still read through the panel rather than being boxed out.
               */}
-              <p
-                aria-hidden="true"
-                className="hidden shrink-0 font-grotesk leading-none text-transparent lg:block"
-                style={{
-                  fontStretch: "62%",
-                  fontWeight: 900,
-                  fontSize: "clamp(8rem, 22svh, 18rem)",
-                  WebkitTextStroke: "1px hsl(var(--paper) / 0.14)",
-                }}
-              >
-                {String(index + 1).padStart(2, "0")}
-              </p>
+              <div className="rounded-sm border border-[hsl(var(--paper)/0.14)] bg-[hsl(var(--ink)/0.55)] p-6 backdrop-blur-[2px] sm:p-8">
+                <p className="mb-6 flex items-baseline justify-between gap-4 border-b border-[hsl(var(--paper)/0.14)] pb-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-[hsl(var(--paper)/0.5)]">
+                  {figure.panelTitle}
+                  <span className="text-[hsl(var(--paper)/0.3)]">Live</span>
+                </p>
+
+                {/*
+                  An empty panel is worse than no panel — a bordered box with a
+                  heading and nothing under it reads as broken, which is exactly
+                  the complaint this whole section exists to answer. The rows
+                  come from the network, so "nothing yet" is a state that WILL
+                  happen: first paint, a slow request, an API that is down.
+                  Say so in a line rather than showing a hole.
+                */}
+                {figure.rows > 0 ? (
+                  figure.panel
+                ) : (
+                  <p className="text-sm leading-relaxed text-[hsl(var(--paper)/0.45)]">
+                    {figure.emptyLine}
+                  </p>
+                )}
+              </div>
             </div>
           </section>
         ))}
