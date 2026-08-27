@@ -329,6 +329,61 @@
     background: hsl(var(--ink) / calc(var(--op-p, 0) * 0.82));
   }
 
+  /*
+   * The ground the opening sits on.
+   *
+   * Ink alone is a void: once the headline has exploded outward there is
+   * nothing left in the middle of the screen and the section reads as a
+   * loading failure. A hairline grid plus one soft radial gives the dark
+   * something to be — the same move the F1 dashboard makes on its body, at
+   * roughly the same strength (it uses rgba(255,255,255,0.016) lines).
+   *
+   * Both layers are fixed to the zone, not the page, so they don't drift.
+   */
+  .op-ground {
+    background-image:
+      linear-gradient(hsl(var(--paper) / 0.022) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--paper) / 0.022) 1px, transparent 1px),
+      radial-gradient(
+        70rem 40rem at 72% 18%,
+        hsl(var(--accent) / 0.07),
+        transparent 70%
+      );
+    background-size: 4.5rem 4.5rem, 4.5rem 4.5rem, 100% 100%;
+  }
+
+  /*
+   * ── The route ─────────────────────────────────────────────────────────────
+   *
+   * A path that draws itself as you descend, rather than a straight progress
+   * bar: the rupee's way down the page. The line's total length is measured
+   * once in JS and written to `--len`, so the draw is one `calc()` on the same
+   * `--op-p` everything else here uses.
+   *
+   * The stroke is a gradient from marigold to paper — it arrives yellow and
+   * ends white, so the colour itself reports how far down you are.
+   */
+  .op-route-line {
+    stroke-dasharray: var(--len, 1000);
+    /* Undrawn at rest is CORRECT here, unlike text: a route that is already
+       complete before you scroll has nothing to say. It is decorative, carries
+       no information of its own, and the section is legible without it. */
+    stroke-dashoffset: var(--len, 1000);
+  }
+
+  .op-scrub .op-route-line {
+    stroke-dashoffset: calc(var(--len, 1000) * (1 - var(--op-p, 0)));
+  }
+
+  /*
+   * Waypoints. Each carries its own `--at`, the progress at which the line
+   * reaches it, and fades up as the draw passes — `(p - at) * 12` crosses 0→1
+   * over about 8% of the travel, which is a snap rather than a slow bloom.
+   */
+  .op-scrub .op-route-node {
+    opacity: calc((var(--op-p, 0) - var(--at, 0)) * 12);
+  }
+
   /* The eyebrow and the buttons belong to the headline, so they leave with it. */
   .op-scrub .op-chrome {
     opacity: calc(1 - var(--op-p, 0) * 0.85);
