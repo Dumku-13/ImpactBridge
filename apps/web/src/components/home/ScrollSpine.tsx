@@ -128,17 +128,25 @@ export function ScrollSpine({
       ref={rootRef}
       aria-hidden="true"
       /*
-       * Shown only from 1440px up, and the number is arithmetic rather than
-       * taste: the page's content column is `max-w-7xl`, i.e. 1280px. Below
-       * 1440 the gutter either side is under 80px and this rail is ~43px wide
-       * plus breathing room — at exactly 1280 there is no gutter at all and the
-       * rail prints straight over the text. A progress indicator that sits on
-       * the content it is indexing is worse than no indicator.
+       * Two modes, because the room available is not a matter of taste.
        *
-       * Blend mode is applied here so the track, the fill, the ticks and the
-       * label all invert together against ink, paper and ink again.
+       * The page's content column is `max-w-7xl` (1280px) inside 24px of
+       * padding, so at a 1280px window the text starts 24px from the edge and
+       * there is NO gutter to put anything in. The full rail — ticks and a
+       * name — is ~43px wide and needs about 1440px before it clears the copy.
+       *
+       * A previous version hid the whole thing below 1440px, which meant a
+       * 1427px laptop — where there is in fact 133px of gutter — showed nothing
+       * at all and the feature looked unbuilt. So below that
+       * width the rail keeps the part that matters — the LINE, 1px, tucked at
+       * 12px where nothing can collide with it — and drops only the ticks and
+       * the label. The scroll indication survives everywhere; the annotation
+       * appears when there is somewhere to put it.
+       *
+       * Blend mode is applied here so track, fill, ticks and label all invert
+       * together against ink, paper and ink again.
        */
-      className="pointer-events-none fixed left-5 top-1/2 z-40 hidden -translate-y-1/2 mix-blend-difference min-[1440px]:block"
+      className="pointer-events-none fixed left-3 top-1/2 z-40 hidden -translate-y-1/2 mix-blend-difference md:block min-[1360px]:left-5"
     >
       <div className="relative flex h-[46svh] items-stretch gap-2.5">
         {/* Track, then the fill scaling from the top. */}
@@ -149,8 +157,9 @@ export function ScrollSpine({
           />
         </div>
 
-        {/* One tick per section — the whole outline, at a glance, in 8px. */}
-        <ol className="flex flex-col justify-between py-1">
+        {/* One tick per section — the whole outline, at a glance. Only where
+            there is gutter to hold it; see the note on the root element. */}
+        <ol className="hidden flex-col justify-between py-1 min-[1360px]:flex">
           {sections.map((section) => (
             <li
               key={section.id}
@@ -173,7 +182,7 @@ export function ScrollSpine({
         */}
         <span
           ref={labelRef}
-          className="self-center text-[9px] font-semibold uppercase tracking-[0.22em] text-[hsl(40_24%_96%/0.85)] transition-opacity duration-300"
+          className="hidden self-center text-[9px] font-semibold uppercase tracking-[0.22em] text-[hsl(40_24%_96%/0.85)] transition-opacity duration-300 min-[1360px]:block"
           style={{ writingMode: "vertical-rl", textOrientation: "mixed" }}
         />
       </div>
