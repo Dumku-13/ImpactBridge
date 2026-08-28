@@ -3,17 +3,17 @@ import { useCallback, useEffect, useState } from "react";
 export type Theme = "light" | "dark" | "system";
 
 /** Shared with the pre-paint script in index.html — keep the two in step. */
-export const THEME_STORAGE_KEY = "impactbridge-theme";
+const THEME_STORAGE_KEY = "impactbridge-theme";
 
 const media = () => window.matchMedia("(prefers-color-scheme: dark)");
 
-export function getStoredTheme(): Theme {
+function getStoredTheme(): Theme {
   const stored = localStorage.getItem(THEME_STORAGE_KEY);
   return stored === "light" || stored === "dark" ? stored : "system";
 }
 
 /** What "system" actually resolves to right now. */
-export function resolveTheme(theme: Theme): "light" | "dark" {
+function resolveTheme(theme: Theme): "light" | "dark" {
   if (theme !== "system") return theme;
   return media().matches ? "dark" : "light";
 }

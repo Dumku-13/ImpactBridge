@@ -23,27 +23,6 @@ export interface MediaAsset {
 }
 
 /**
- * The scroll-scrubbed hero sequence.
- *
- * NOT USED BY ANY COMPONENT, and kept deliberately. The 100 frames are built,
- * committed and ~3.4 MB; the sequence was dropped because scrubbing a person
- * walking spent enormous scroll distance saying nothing, and the poster was
- * dropped later because a face behind a headline fights the type (HANDOFF
- * §3.5) and read as stock against the site's documentary photography.
- *
- * If a future hero wants a scrubbed sequence, this is the address for it.
- * Delete the frames from the pipeline if that stops being true.
- */
-export const heroSequence = {
-  count: 100,
-  width: 1126,
-  height: 648,
-  frame: (i: number) => `${BASE}/hero/frame-${String(i).padStart(4, "0")}.jpg`,
-  poster: `${BASE}/stills/hero-poster.jpg`,
-  alt: "A community health worker walking through a village, carrying records",
-} as const;
-
-/**
  * Muted ambient loops — motion layers, never embedded clips.
  *
  * These run full-bleed behind typography at low opacity. MP4 only: H.264 is

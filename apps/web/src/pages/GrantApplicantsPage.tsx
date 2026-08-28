@@ -80,11 +80,24 @@ export function GrantApplicantsPage() {
                   <div className="flex flex-wrap items-center gap-2">
                     <ApplicationStatusBadge status={application.status} />
                     {application.averageScore != null && (
-                      <span className="tnum inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground">
-                        <Star className="h-3 w-3 text-primary" />
-                        {application.averageScore}
-                        <span className="text-muted-foreground/70">
-                          ({application.reviewCount})
+                      /*
+                        A star, a number and a number in brackets is legible to
+                        anyone who can see the star. Read aloud it is "4 (1)" —
+                        two bare numbers with nothing to attach them to, since
+                        lucide icons render as decorative SVG with no name. The
+                        label carries the meaning; the parts stay hidden so it
+                        isn't announced twice.
+                      */
+                      <span
+                        className="tnum inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground"
+                        aria-label={`Average reviewer score ${application.averageScore} out of 5, from ${application.reviewCount} ${application.reviewCount === 1 ? "review" : "reviews"}`}
+                      >
+                        <span aria-hidden="true" className="inline-flex items-center gap-1">
+                          <Star className="h-3 w-3 text-primary" />
+                          {application.averageScore}
+                          <span className="text-muted-foreground/70">
+                            ({application.reviewCount})
+                          </span>
                         </span>
                       </span>
                     )}

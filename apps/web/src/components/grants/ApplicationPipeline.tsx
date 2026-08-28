@@ -7,7 +7,7 @@ import {
 import { cn } from "@/lib/utils";
 
 /** Colour treatment per stage, reused by the badge and the tracker. */
-export function statusTone(status: ApplicationStatus): string {
+function statusTone(status: ApplicationStatus): string {
   if (status === "REJECTED" || status === "WITHDRAWN")
     return "bg-destructive/10 text-destructive";
   if (status === "COMPLETED") return "bg-primary/10 text-primary";

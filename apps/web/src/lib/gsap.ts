@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, type RefObject } from "react";
+import { useLayoutEffect } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
@@ -13,55 +13,6 @@ export { gsap, ScrollTrigger };
 /** True when the visitor has asked the OS to reduce motion. */
 export function prefersReducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
-
-/**
- * Scoped GSAP setup with guaranteed teardown.
- *
- * Every animation must be created inside a `gsap.context()` bound to the
- * component's root element. Two reasons, both learned the hard way in SPAs:
- *
- *  - Selectors inside the context are scoped to that root, so `".node"` can't
- *    reach into another route's DOM.
- *  - `context.revert()` kills every tween AND every ScrollTrigger the callback
- *    created. Without it, navigating away leaves orphaned triggers attached to
- *    a detached DOM, each still recalculating on scroll. They accumulate across
- *    a session and scroll degrades steadily — the symptom looks like a slow
- *    memory leak and is miserable to trace back.
- *
- * Under `prefers-reduced-motion` the callback never runs at all, rather than
- * running and then being disabled: the resting DOM is the finished state, so
- * skipping setup gives exactly the right result with no work.
- */
-export function useGsap(
-  setup: (ctx: { root: HTMLElement }) => void,
-  deps: unknown[] = [],
-): RefObject<HTMLDivElement> {
-  const root = useRef<HTMLDivElement>(null);
-
-  useLayoutEffect(() => {
-    const el = root.current;
-    if (!el) return;
-    if (prefersReducedMotion()) return;
-
-    const ctx = gsap.context(() => setup({ root: el }), el);
-    return () => ctx.revert();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, deps);
-
-  return root;
-}
-
-/**
- * Recalculate every trigger's start/end positions.
- *
- * Pin positions are computed against document height at creation time. If
- * images or a font land afterwards the document grows and every measurement
- * silently drifts — sections unpin early, progress reaches 1 before the section
- * is done. Call this once the things that change layout have settled.
- */
-export function refreshScrollTriggers() {
-  ScrollTrigger.refresh();
 }
 
 /**

@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { Dialog } from "./Dialog";
 import { Button } from "./Button";
 
@@ -66,18 +66,4 @@ export function ConfirmDialog({
       </div>
     </Dialog>
   );
-}
-
-/**
- * State helper so callers don't hand-roll "which item am I confirming?".
- * Holds the pending subject; `null` means the dialog is closed.
- */
-export function useConfirm<T>() {
-  const [pending, setPending] = useState<T | null>(null);
-  return {
-    pending,
-    isOpen: pending !== null,
-    ask: setPending,
-    dismiss: () => setPending(null),
-  };
 }
