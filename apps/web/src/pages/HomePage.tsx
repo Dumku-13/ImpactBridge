@@ -28,6 +28,16 @@ const SPINE = [
   { id: "causes", label: "The causes" },
 ] as const;
 
+/*
+ * A stable array, built once at module scope.
+ *
+ * `sections={[...SPINE]}` created a NEW array on every render of this page, and
+ * `ScrollSpine`'s effect depends on that prop — so every render tore down its
+ * scroll listener, re-queried the DOM for six section elements, and
+ * re-subscribed. Identity matters when a prop is an effect dependency.
+ */
+const SPINE_SECTIONS: Array<{ id: string; label: string }> = [...SPINE];
+
 const AUDIENCES = [
   {
     icon: Heart,
@@ -102,7 +112,7 @@ export function HomePage() {
         </nav>
       </header>
 
-      <ScrollSpine sections={[...SPINE]} />
+      <ScrollSpine sections={SPINE_SECTIONS} />
 
       {/*
         `relative` so the thread can span exactly this box — the whole run of

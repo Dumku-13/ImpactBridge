@@ -33,9 +33,22 @@ export function rateLimit(options: {
   windowMs: number;
   max: number;
   message?: string;
+  /**
+   * Distinguishes this limiter's buckets from any other limiter's.
+   *
+   * Every limiter shares the Map above, and the key was `ip:path` alone — so
+   * two limiters covering the same request (a router-level one plus a
+   * route-level one, which is the obvious way to give a sensitive endpoint a
+   * tighter cap) counted into the SAME bucket. Each request incremented it
+   * twice, so both limits silently became half of what they said, and a user
+   * hit "too many attempts" at five when the code claimed ten.
+   *
+   * Defaults to "default", which preserves the behaviour of a single limiter.
+   */
+  name?: string;
 }) {
   return (req: Request, _res: Response, next: NextFunction) => {
-    const key = `${req.ip}:${req.path}`;
+    const key = `${req.ip}:${req.path}:${options.name ?? "default"}`;
     const now = Date.now();
     const bucket = buckets.get(key);
 

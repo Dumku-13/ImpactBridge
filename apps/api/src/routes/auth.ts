@@ -13,9 +13,30 @@ import {
   setRefreshCookie,
 } from "../lib/auth/cookies.js";
 import { requireAuth } from "../middleware/requireAuth.js";
+import { rateLimit } from "../middleware/rateLimit.js";
 import { HttpError } from "../middleware/errorHandler.js";
 
 export const authRouter: Router = Router();
+
+/*
+ * An EXTRA throttle on the one endpoint that makes our server send mail to an
+ * address the requester chose.
+ *
+ * `/api/auth` as a whole already carries `authRateLimit` (20 per 15 minutes per
+ * IP per path, wired in app.ts). That is the right ceiling for guessing a
+ * password — it is far too generous for an endpoint whose cost is borne by a
+ * stranger's inbox, so this one is five.
+ *
+ * `name` matters: bucket keys are `ip:path:name`, and without a distinct name
+ * this limiter would share a bucket with the router-level one, count the same
+ * request twice, and silently halve both limits.
+ */
+const passwordResetLimit = rateLimit({
+  name: "forgot-password",
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: "Too many reset requests. Wait a few minutes and try again.",
+});
 
 /**
  * Every handler validates its body with a schema from @impactbridge/shared —
@@ -108,7 +129,7 @@ authRouter.post("/verify-email", async (req, res, next) => {
 });
 
 /** POST /api/auth/forgot-password — always returns the same generic message. */
-authRouter.post("/forgot-password", async (req, res, next) => {
+authRouter.post("/forgot-password", passwordResetLimit, async (req, res, next) => {
   try {
     const input = forgotPasswordSchema.parse(req.body);
     await authService.forgotPassword(input);

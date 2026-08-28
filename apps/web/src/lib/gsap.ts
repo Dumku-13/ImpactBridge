@@ -97,9 +97,45 @@ export function useScrollTriggerRefresh() {
     // view, a late-arriving video poster).
     const timer = setTimeout(refresh, 1200);
 
+    /*
+     * And the case a timer cannot cover: the document getting TALLER after that
+     * backstop has already fired.
+     *
+     * The landing page now renders panels of live records — organisations,
+     * their totals, the open grants — fetched over the network and sitting
+     * ABOVE every scroll-driven section on the page. When they arrive the
+     * document grows by hundreds of pixels, and every trigger below them keeps
+     * the start/end it measured against the shorter page: ranges collapse or
+     * go negative, and a scrub either never advances or behaves as though its
+     * section has already passed (§3.6).
+     *
+     * A slow request, an image with no intrinsic size, an expanded accordion —
+     * all the same shape of problem. Watching the height catches them all,
+     * where guessing a delay catches only the ones faster than the guess.
+     */
+    let settle = 0;
+    let lastHeight = document.documentElement.scrollHeight;
+
+    const observer = new ResizeObserver(() => {
+      const height = document.documentElement.scrollHeight;
+      // Only on a real change: the observer also fires on width-only resizes,
+      // which ScrollTrigger already handles itself.
+      if (height === lastHeight) return;
+      lastHeight = height;
+
+      // Debounced, because a run of images landing together would otherwise
+      // trigger a full re-measure of every trigger on the page per image.
+      clearTimeout(settle);
+      settle = window.setTimeout(refresh, 160);
+    });
+
+    observer.observe(document.documentElement);
+
     return () => {
       cancelled = true;
       clearTimeout(timer);
+      clearTimeout(settle);
+      observer.disconnect();
       window.removeEventListener("load", refresh);
     };
   }, []);
