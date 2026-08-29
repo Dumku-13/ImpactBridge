@@ -1,6 +1,6 @@
 import React, { Suspense, lazy, type ComponentType } from "react";
 import ReactDOM from "react-dom/client";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "./auth/AuthContext";
 import { ProtectedRoute, PublicOnlyRoute } from "./auth/ProtectedRoute";
@@ -62,6 +62,8 @@ const MyApplicationsPage = lazyPage(() => import("./pages/MyApplicationsPage"), 
 const GrantApplicantsPage = lazyPage(() => import("./pages/GrantApplicantsPage"), "GrantApplicantsPage");
 const OrganizationProfilePage = lazyPage(() => import("./pages/OrganizationProfilePage"), "OrganizationProfilePage");
 const DonationSuccessPage = lazyPage(() => import("./pages/DonationSuccessPage"), "DonationSuccessPage");
+const NotificationsPage = lazyPage(() => import("./pages/NotificationsPage"), "NotificationsPage");
+const NotFoundPage = lazyPage(() => import("./pages/NotFoundPage"), "NotFoundPage");
 
 // Imported from their own files rather than the barrel, or all four dashboards
 // would land in a single chunk and a donor would download the admin console.
@@ -145,6 +147,12 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
 
                   {/* Signed-in, role-gated */}
                   <Route element={<ProtectedRoute />}>
+                    {/* Any signed-in role — every role receives notifications. */}
+                    <Route
+                      path="/notifications"
+                      element={<NotificationsPage />}
+                    />
+
                     <Route element={<ProtectedRoute allow={["DONOR"]} />}>
                       <Route path="/donor" element={<DonorDashboard />} />
                       <Route
@@ -171,7 +179,13 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
                   </Route>
                 </Route>
 
-                <Route path="*" element={<Navigate to="/" replace />} />
+                {/*
+                  A real 404 rather than `<Navigate to="/" />`. Silently
+                  redirecting a mistyped or dead link to the homepage reads as
+                  the app eating the click, and hides broken links from anyone
+                  who could fix them.
+                */}
+                <Route path="*" element={<NotFoundPage />} />
               </Routes>
             </Suspense>
           </ErrorBoundary>

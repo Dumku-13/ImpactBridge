@@ -154,6 +154,16 @@ export function NotificationBell({ signedIn }: { signedIn: boolean }) {
               );
             })}
           </ul>
+
+          {/* The dropdown holds the most recent few; everything else lives on
+              the page. Without this link nothing pointed there. */}
+          <Link
+            to="/notifications"
+            onClick={() => setOpen(false)}
+            className="block border-t border-border px-4 py-3 text-center text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+          >
+            See all notifications
+          </Link>
         </div>
       )}
     </div>
