@@ -321,19 +321,25 @@ token refresh, hashed and expiring reset tokens, production error redaction,
 
 ### Real gaps, in the order worth doing
 
-1. **Not deployed anywhere.** CI typechecks, tests, builds and verifies
-   migrations apply from scratch, but there is no deploy step and no live URL.
-   For a portfolio piece this is the big one — you cannot send an interviewer a
-   link.
-2. **Email is a console stub.** `lib/mailer.ts` prints to the API log; the Resend
-   implementation was never written. Password reset and email verification links
-   exist only in the terminal, so a real signup cannot be completed in a demo.
+1. **Deploy it.** `render.yaml` + `DEPLOY.md` are written and pushed — a
+   Blueprint deploy on Render stands up Postgres, the API from its Dockerfile
+   and the web app as a static site, with the `/api/*` rewrite that keeps the
+   refresh cookie same-origin. **This needs the user's Render login and nobody
+   else's**, so it cannot be done from a session. Roughly 15 minutes of their
+   time, most of it waiting for the first Docker build.
+2. **Email is a console stub.** `lib/mailer.ts` prints to the API log; the
+   Resend implementation was never written. Password reset and email
+   verification links exist only in the terminal, so a real signup cannot be
+   completed in a demo. Needs a Resend account and key — also the user's.
 3. **No refunds.** `TransactionType.REFUND` and `DonationStatus.REFUNDED` are in
-   the schema and never written by any code path.
-4. **No 404 page** — unknown URLs redirect silently to home.
-5. **No donor account page** — NGOs and funders can edit their profile; a donor
-   cannot change their name or password anywhere.
-6. **Notifications are bell-only** — no page to page back through them.
+   the schema and never written by any code path. Deliberately left alone in the
+   run-up to the interview: it is invisible in a demo and it is money code.
+4. **No donor account page.** NGOs and funders can edit their profile; a donor
+   cannot change their name or password. Note this needs API work too — there is
+   no self-update endpoint at all (`PATCH /auth/me` and a change-password route
+   would both be new).
+
+Done since this list was written: the 404 page and the notifications page.
 
 ### Housekeeping
 
