@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="ImpactBridge">
+  <!--
+    A bridge over a ground line, in the site's own palette: ink field, paper
+    span, vermilion ground. SVG rather than a PNG so it stays crisp at 16px in a
+    tab and at 64px in a bookmark bar, and so the whole mark is 500 bytes.
+  -->
+  <rect width="64" height="64" fill="#11110e"/>
+
+  <!-- The span: a flat deck on two piers. Kept heavy — at 16px anything finer
+       than 4px disappears entirely. -->
+  <rect x="10" y="26" width="44" height="6" fill="#f4ede1"/>
+  <rect x="17" y="32" width="6" height="14" fill="#f4ede1"/>
+  <rect x="41" y="32" width="6" height="14" fill="#f4ede1"/>
+
+  <!-- The ground it reaches. -->
+  <rect x="0" y="50" width="64" height="6" fill="#ef482e"/>
+</svg>

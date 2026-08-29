@@ -31,6 +31,7 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { Alert } from "@/components/ui/Alert";
 import { ApiError } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 const SORTS: Array<{ value: GrantSort; label: string }> = [
   { value: "deadline", label: "Closing soonest" },
@@ -39,6 +40,7 @@ const SORTS: Array<{ value: GrantSort; label: string }> = [
 ];
 
 export function GrantsPage() {
+  useDocumentTitle("Open grants");
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<string | undefined>();
   const [sort, setSort] = useState<GrantSort>("deadline");

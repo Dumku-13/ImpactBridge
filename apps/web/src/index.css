@@ -233,6 +233,29 @@
 
 @layer components {
   /*
+   * The skip link.
+   *
+   * Written as one class rather than `sr-only focus:not-sr-only`, which is the
+   * idiomatic Tailwind pairing and did not work here: `sr-only` sets
+   * `clip: rect(0,0,0,0)` and the focus variant never overrode it, so the link
+   * stayed a clipped 32×16 box at -1,-1 even while focused. Measured, not
+   * assumed. Moving it off-screen by position instead has no such conflict —
+   * and it stays in the accessibility tree and the tab order the whole time,
+   * which `display: none` would not.
+   */
+  .skip-link {
+    position: absolute;
+    left: -9999px;
+    top: 0;
+    z-index: 60;
+  }
+
+  .skip-link:focus {
+    left: 1rem;
+    top: 1rem;
+  }
+
+  /*
    * Paper grain. A single fixed SVG noise layer over the whole page at very low
    * opacity — the difference between "flat white div" and a surface. Fixed so
    * it never scrolls with content, and inert so it can't eat clicks.

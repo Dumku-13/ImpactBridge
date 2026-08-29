@@ -16,6 +16,7 @@ import { openReceipt } from "@/lib/receipt";
 import { Alert } from "@/components/ui/Alert";
 import { CountUp } from "@/components/ui/CountUp";
 import { Reveal } from "@/components/ui/Reveal";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 /**
  * Where the gateway sends the donor after payment.
@@ -38,6 +39,7 @@ import { Reveal } from "@/components/ui/Reveal";
  *     HANDOFF §3.7 for why that rule is absolute on this platform.
  */
 export function DonationSuccessPage() {
+  useDocumentTitle("Donation confirmed");
   const [params] = useSearchParams();
   const orderId = params.get("order_id");
   const paymentId = params.get("payment_id");

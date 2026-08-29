@@ -21,6 +21,7 @@ import { Field } from "@/components/ui/Field";
 import { Input } from "@/components/ui/Input";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { cn } from "@/lib/utils";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 type SaveState = "idle" | "unsaved" | "saving" | "saved" | "error";
 
@@ -43,6 +44,7 @@ const PITCH_MIN = 80;
  * collecting nothing.
  */
 export function ApplyPage() {
+  useDocumentTitle("Apply for a grant");
   const { slug = "" } = useParams();
   const navigate = useNavigate();
   const { data: grant, isPending } = useGrant(slug);

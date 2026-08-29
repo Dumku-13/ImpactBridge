@@ -3,11 +3,55 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ImpactBridge</title>
+    <title>ImpactBridge — funding that actually reaches the ground</title>
     <meta
       name="description"
-      content="Connecting nonprofits, donors, and funders."
+      content="Give to verified nonprofits and follow the money: every donation receipted, every organisation document-checked by a person, every grant decision written to an audit log."
     />
+
+    <!--
+      Icons. The SVG is the real one — crisp at 16px in a tab and at any size
+      in a bookmark bar, for 500 bytes. The PNG exists because iOS ignores SVG
+      favicons for home-screen icons.
+    -->
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <!-- Paints the browser chrome on mobile to match the page it frames. -->
+    <meta name="theme-color" content="#11110e" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f4ede1" media="(prefers-color-scheme: light)" />
+
+    <!--
+      The link preview. Without these, pasting the URL into Slack, WhatsApp or
+      LinkedIn renders a bare grey rectangle — which is the first thing anyone
+      sees of this project, often before the site itself.
+
+      The image path is relative, which Slack, WhatsApp and LinkedIn all resolve
+      against the page URL. The OG spec asks for an absolute one, so if a
+      particular scraper ever shows no image, replace it with the deployed
+      origin — that is the only reason it would fail. Scrapers do not run
+      JavaScript either way, so these tags are the only description most of them
+      will ever read.
+    -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="ImpactBridge" />
+    <meta property="og:title" content="ImpactBridge — funding that actually reaches the ground" />
+    <meta
+      property="og:description"
+      content="Verified nonprofits, traceable donations, and grants with their rules and decisions on the record."
+    />
+    <meta property="og:image" content="/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="ImpactBridge — funding that actually reaches the ground" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="ImpactBridge — funding that actually reaches the ground" />
+    <meta
+      name="twitter:description"
+      content="Verified nonprofits, traceable donations, and grants with their rules and decisions on the record."
+    />
+    <meta name="twitter:image" content="/og.png" />
     <!--
       Set the theme BEFORE first paint. If this ran inside React instead, a user
       on dark would get a full-brightness flash of the light theme on every cold

@@ -70,6 +70,24 @@ export function AppLayout() {
 
   return (
     <div className="grain min-h-screen bg-background">
+      {/*
+        Skip link. Every page here puts a header, a nav, a theme toggle and a
+        notification bell before the content, so a keyboard or screen-reader
+        user tabbed through all of it on EVERY navigation to reach what they
+        came for.
+
+        Visually hidden until focused, which is the whole trick: `sr-only`
+        removes it from the layout, `focus:not-sr-only` puts it back the moment
+        it is tabbed to. It must be the first focusable thing in the document,
+        so it sits above everything else here.
+      */}
+      <a
+        href="#main"
+        className="skip-link rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+      >
+        Skip to content
+      </a>
+
       <ScrollProgress />
       {/*
         Opaque rather than translucent-with-`backdrop-blur`: a backdrop filter on
@@ -150,8 +168,12 @@ export function AppLayout() {
         block the next route on.
       */}
       <main
+        id="main"
         key={location.pathname}
-        className="mx-auto max-w-6xl animate-fade-up px-6 py-10"
+        /* `tabIndex={-1}` so the skip link can move focus here, not just scroll
+           the page — without it the viewport jumps but the tab order does not. */
+        tabIndex={-1}
+        className="mx-auto max-w-6xl animate-fade-up px-6 py-10 focus:outline-none"
       >
         <ErrorBoundary resetKey={location.pathname}>
           {/*

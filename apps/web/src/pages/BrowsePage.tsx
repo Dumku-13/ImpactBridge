@@ -21,6 +21,7 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { BrowseOpening } from "@/components/browse/BrowseOpening";
 import { useScrollTriggerRefresh } from "@/lib/gsap";
 import { cn } from "@/lib/utils";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 const SORT_OPTIONS: Array<{ value: OrganizationSort; label: string }> = [
   { value: "relevance", label: "Most relevant" },
@@ -40,6 +41,7 @@ const SORT_OPTIONS: Array<{ value: OrganizationSort; label: string }> = [
  * a search page.
  */
 export function BrowsePage() {
+  useDocumentTitle("Browse organisations");
   const [searchParams, setSearchParams] = useSearchParams();
   const [showFilters, setShowFilters] = useState(false);
 

@@ -20,11 +20,13 @@ import { cn } from "@/lib/utils";
 import { Alert } from "@/components/ui/Alert";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ApiError } from "@/lib/api";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 export function GrantDetailPage() {
   const { slug = "" } = useParams();
   const { user } = useAuth();
   const { data: grant, isPending, error } = useGrant(slug);
+  useDocumentTitle(grant?.title ?? null);
   // Only an NGO admin has an organisation; the hook no-ops for other roles.
   const { data: myOrg } = useMyOrganization();
 

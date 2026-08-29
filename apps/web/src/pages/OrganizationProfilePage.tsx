@@ -23,6 +23,7 @@ import { OrgOpening } from "@/components/organizations/OrgOpening";
 import { OrgGallery } from "@/components/organizations/OrgGallery";
 import { useScrollTriggerRefresh } from "@/lib/gsap";
 import { cn } from "@/lib/utils";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 /**
  * An organisation's public profile, told as a documentary rather than listed
@@ -70,6 +71,7 @@ export function OrganizationProfilePage() {
   const { slug = "" } = useParams();
   const { user } = useAuth();
   const { data: org, isPending, isError, error } = useOrganization(slug);
+  useDocumentTitle(org?.name ?? null);
 
   const toggleBookmark = useToggleBookmark();
   const toggleFollow = useToggleFollow();

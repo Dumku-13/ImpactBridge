@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { ArrowLeft, ArrowRight } from "lucide-react";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 /**
  * 404.
@@ -17,6 +18,7 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
  * an apology graphic.
  */
 export function NotFoundPage() {
+  useDocumentTitle("Page not found");
   const { pathname } = useLocation();
 
   return (

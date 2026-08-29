@@ -5,6 +5,7 @@ import { useGrantApplications } from "@/api/applications";
 import { useMyGrants } from "@/api/grants";
 import { ApplicationStatusBadge } from "@/components/grants/ApplicationPipeline";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 /**
  * The funder's applicant queue for one grant — the "compare applicants" view.
@@ -13,6 +14,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
  * across many rows (score, amount, track record), which cards make harder.
  */
 export function GrantApplicantsPage() {
+  useDocumentTitle("Applicants");
   const { grantId = "" } = useParams();
   const { data: applications, isPending } = useGrantApplications(grantId);
   const { data: grants } = useMyGrants();

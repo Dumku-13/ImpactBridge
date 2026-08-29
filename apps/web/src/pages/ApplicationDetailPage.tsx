@@ -41,6 +41,7 @@ import { Field } from "@/components/ui/Field";
 import { Input } from "@/components/ui/Input";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { cn } from "@/lib/utils";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-IN", {
@@ -54,6 +55,7 @@ export function ApplicationDetailPage() {
   const { id = "" } = useParams();
   const { user } = useAuth();
   const { data: application, isPending, error } = useApplication(id);
+  useDocumentTitle(application?.grant.title ?? null);
 
   if (isPending) {
     return (

@@ -9,6 +9,7 @@ import { useAuth } from "@/auth/AuthContext";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { cn } from "@/lib/utils";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 /**
  * Every notification, not just the last handful.
@@ -42,6 +43,7 @@ function timeAgo(iso: string): string {
 }
 
 export function NotificationsPage() {
+  useDocumentTitle("Notifications");
   const { user } = useAuth();
   const { data, isPending } = useNotifications(Boolean(user));
   const markRead = useMarkRead();

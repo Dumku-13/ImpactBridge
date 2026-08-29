@@ -9,6 +9,7 @@ import { useMyApplications } from "@/api/applications";
 import { ApplicationStatusBadge } from "@/components/grants/ApplicationPipeline";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { cn } from "@/lib/utils";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-IN", {
@@ -59,6 +60,7 @@ function PipelineStrip({ status }: { status: ApplicationStatus }) {
 }
 
 export function MyApplicationsPage() {
+  useDocumentTitle("My applications");
   const { data: applications, isPending } = useMyApplications();
 
   return (

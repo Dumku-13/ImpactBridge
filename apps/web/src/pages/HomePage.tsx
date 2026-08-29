@@ -13,6 +13,7 @@ import { StoryRail } from "@/components/home/StoryRail";
 import { StatBand } from "@/components/home/StatBand";
 import { Causes } from "@/components/home/Causes";
 import { useScrollTriggerRefresh } from "@/lib/gsap";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 /**
  * What the scroll rail tracks. Ids are attached to wrappers below rather than
@@ -57,6 +58,7 @@ const AUDIENCES = [
 ];
 
 export function HomePage() {
+  useDocumentTitle("ImpactBridge");
   const { user } = useAuth();
 
   // Triggers on this page are created before fonts and images settle; without
@@ -73,6 +75,15 @@ export function HomePage() {
         end of the palette because this bar always sits on dark imagery,
         regardless of the visitor's theme.
       */}
+      {/* Same skip link as AppLayout — the landing page has its own shell, so
+          it needs its own. See the note there. */}
+      <a
+        href="#main"
+        className="skip-link rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+      >
+        Skip to content
+      </a>
+
       <header className="absolute inset-x-0 top-0 z-30">
         <nav className="mx-auto flex h-20 max-w-7xl items-center px-6">
           <span
@@ -120,7 +131,7 @@ export function HomePage() {
         its canvas, which is why it is measured from here rather than from the
         document: the footer should not be part of the draw.
       */}
-      <main className="relative">
+      <main id="main" tabIndex={-1} className="relative focus:outline-none">
         <PageThread />
 
         <div id="opening">
