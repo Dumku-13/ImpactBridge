@@ -48,7 +48,6 @@ SRC.contactSheet = path.join(SRC.pictures, 'imapct stories.png');
 
 const MEDIA_DIR = path.join(ROOT, 'apps', 'web', 'public', 'media');
 const OUT = {
-  hero: path.join(MEDIA_DIR, 'hero'),
   stories: path.join(MEDIA_DIR, 'stories'),
   stills: path.join(MEDIA_DIR, 'stills'),
   posters: path.join(MEDIA_DIR, 'posters'),
@@ -131,102 +130,20 @@ function relToMedia(p) {
   return path.relative(MEDIA_DIR, p).split(path.sep).join('/');
 }
 
-// ---------------------------------------------------------------------------
-// A. Hero scroll sequence
-// ---------------------------------------------------------------------------
-
-function buildHero() {
-  section('A. Hero scroll sequence');
-  ensureDir(OUT.hero);
-
-  const SRC_COUNT = 161;
-  const TARGET_COUNT = 100;
-  // Verified visually (frame_120.jpg): crop=iw*0.88:ih*0.90 fully removes the
-  // bottom-right sparkle watermark while keeping the subject's feet and the
-  // path in frame. The originally-suggested 0.92/0.90 crop left a faint
-  // remnant of the sparkle, so the width crop was tightened to 0.88.
-  const CROP = HERO_SPARKLE_CROP;
-  /*
-   * Ceiling, not a target. The source frames are 1280x720, so after the crop
-   * only 1126x648 of real detail survives — scaling past that invents pixels,
-   * costs bytes, and softens the one image the whole homepage rests on. The
-   * `min(WIDTH,iw)` in the filter below clamps to whatever the source actually
-   * has, exactly as the ambient-loop encoder already does.
-   */
-  const WIDTH = 1600;
-  const MAX_AVG_BYTES = 35 * 1024;
-
-  const existing = existsSync(OUT.hero) ? readdirSync(OUT.hero).filter((f) => f.endsWith('.jpg')) : [];
-  if (!FORCE && existing.length === TARGET_COUNT) {
-    log(`Already built (${TARGET_COUNT} frames) — skipping (use --force to rebuild).`);
-    return summarizeHero();
-  }
-
-  // Evenly-spaced decimation, always keeping first (1) and last (SRC_COUNT).
-  const indices = [];
-  for (let i = 0; i < TARGET_COUNT; i++) {
-    indices.push(Math.round(1 + (i * (SRC_COUNT - 1)) / (TARGET_COUNT - 1)));
-  }
-
-  function renderAll(quality, width) {
-    const qscale = qscaleFromQuality(quality);
-    for (let i = 0; i < indices.length; i++) {
-      const srcFile = path.join(SRC.hero, `frame_${String(indices[i]).padStart(3, '0')}.jpg`);
-      const outFile = path.join(OUT.hero, `frame-${String(i + 1).padStart(4, '0')}.jpg`);
-      ffmpeg(['-i', srcFile, '-vf', `${CROP},scale='min(${width},iw)':-2`, '-q:v', String(qscale), outFile]);
-    }
-  }
-
-  function measure() {
-    const files = readdirSync(OUT.hero).filter((f) => f.endsWith('.jpg'));
-    const totalBytes = files.reduce((s, f) => s + fileSize(path.join(OUT.hero, f)), 0);
-    return { files, totalBytes, avg: totalBytes / files.length };
-  }
-
-  let quality = 72;
-  let width = WIDTH;
-  log(`Rendering ${TARGET_COUNT} frames (decimated from ${SRC_COUNT}), crop + scale to ${width}px wide, quality ${quality}...`);
-  renderAll(quality, width);
-  let { files, totalBytes, avg } = measure();
-
-  // Phase 1: lower JPEG quality (ffmpeg's mjpeg encoder tops out at qscale 31,
-  // i.e. "quality" 0 in our 0-100 mapping — that's the floor for this lever).
-  let attempts = 0;
-  while (avg > MAX_AVG_BYTES && quality > 0 && attempts < 10) {
-    quality = Math.max(0, quality - 8);
-    log(`Average frame size ${kb(avg)} exceeds ${kb(MAX_AVG_BYTES)} target — lowering quality to ${quality} and re-encoding...`);
-    renderAll(quality, width);
-    ({ files, totalBytes, avg } = measure());
-    attempts++;
-  }
-
-  // Phase 2: JPEG quality is maxed out (qscale 31) but still over budget —
-  // trim the output width in small steps until the average fits.
-  attempts = 0;
-  while (avg > MAX_AVG_BYTES && width > 1000 && attempts < 10) {
-    width -= 50;
-    log(`Still over budget at max compression — reducing width to ${width}px and re-encoding...`);
-    renderAll(quality, width);
-    ({ files, totalBytes, avg } = measure());
-    attempts++;
-  }
-
-  log(`Done: ${files.length} frames, average ${kb(avg)}/frame, total ${mb(totalBytes)}, final quality ${quality}, width ${width}px.`);
-  return summarizeHero();
-}
-
-function summarizeHero() {
-  const files = readdirSync(OUT.hero).filter((f) => f.endsWith('.jpg')).sort();
-  const totalBytes = files.reduce((s, f) => s + fileSize(path.join(OUT.hero, f)), 0);
-  const { width, height } = files.length ? ffprobeDims(path.join(OUT.hero, files[0])) : { width: 0, height: 0 };
-  return {
-    count: files.length,
-    width,
-    height,
-    pathPattern: 'hero/frame-%04d.jpg',
-    totalBytes,
-  };
-}
+/* ---------------------------------------------------------------------------
+ * A. Hero scroll sequence — REMOVED 2026-08-29
+ *
+ * This built 100 cropped frames (3.7 MB, committed) for a scroll-scrubbed hero.
+ * That hero was dropped twice over: the scrub spent enormous scroll distance on
+ * motion that said nothing, and the still that replaced it was a face behind a
+ * headline, which this project has a rule against (HANDOFF §3.5). The landing
+ * page opens on type now and references neither.
+ *
+ * The frames and the step are gone rather than left orphaned — 3.7 MB in every
+ * clone of a public repo, generated on every pipeline run, for files nothing
+ * loads. `hero image.png` is still built as `stills/hero-poster.jpg` in step D
+ * if a future hero wants a still.
+ * ------------------------------------------------------------------------- */
 
 // ---------------------------------------------------------------------------
 // B. Ambient loops
@@ -662,10 +579,8 @@ function buildStills() {
         results.push({ file: outName, width: dims.width, height: dims.height });
         log(`  detail-closeup.jpg -> ${outName} (${dims.width}x${dims.height}, ${kb(fileSize(outPath))})`);
       } catch (err) {
-        log(`  FAILED split -> ${outName}: ${err.message.split('
-')[0]} — skipping.`);
-        failures.push({ src: 'detail-closeup.jpg', out: outName, reason: err.message.split('
-')[0] });
+        log(`  FAILED split -> ${outName}: ${err.message.split('\n')[0]} — skipping.`);
+        failures.push({ src: 'detail-closeup.jpg', out: outName, reason: err.message.split('\n')[0] });
       }
     }
   }
@@ -735,16 +650,10 @@ function buildPosters() {
 // Manifest + .gitignore
 // ---------------------------------------------------------------------------
 
-function writeManifest({ hero, loops, stories, stills, posters }) {
+function writeManifest({ loops, stories, stills, posters }) {
   section('Manifest');
   const manifest = {
     generatedAt: new Date().toISOString(),
-    hero: {
-      count: hero.count,
-      width: hero.width,
-      height: hero.height,
-      pathPattern: hero.pathPattern,
-    },
     loops,
     stories,
     stills,
@@ -796,8 +705,6 @@ function main() {
   if (FORCE) console.log('(--force: rebuilding everything)');
 
   ensureDir(MEDIA_DIR);
-
-  const hero = buildHero();
 
   const loops = {
     'water-loop': buildLoop({
@@ -890,11 +797,10 @@ function main() {
   const { results: stills, failures: stillFailures } = buildStills();
   const { results: posters, failures: posterFailures } = buildPosters();
 
-  const manifest = writeManifest({ hero, loops, stories, stills, posters });
+  const manifest = writeManifest({ loops, stories, stills, posters });
   updateGitignore();
 
   section('Summary');
-  log(`Hero: ${hero.count} frames, ${hero.width}x${hero.height}, ${mb(hero.totalBytes)} total`);
   for (const [name, info] of Object.entries(loops)) {
     log(`${name}: mp4 ${mb(info.bytes.mp4)}, webm ${mb(info.bytes.webm)}`);
   }
