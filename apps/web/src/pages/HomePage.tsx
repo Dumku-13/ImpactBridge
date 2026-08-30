@@ -12,6 +12,8 @@ import { FundingFlow } from "@/components/home/FundingFlow";
 import { StoryRail } from "@/components/home/StoryRail";
 import { StatBand } from "@/components/home/StatBand";
 import { Causes } from "@/components/home/Causes";
+import { Faq } from "@/components/site/Faq";
+import { SiteFooter } from "@/components/layout/SiteFooter";
 import { useScrollTriggerRefresh } from "@/lib/gsap";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
@@ -179,16 +181,28 @@ export function HomePage() {
             ))}
           </div>
         </section>
+
+        {/*
+          Last section before the footer, and deliberately so: by this point the
+          page has made its claim, and the remaining reasons someone does not
+          sign up are questions — is this real money, who sees my application,
+          what does it cost. Answering them here is the last thing between
+          reading and acting.
+
+          Inside <main> rather than after it, because it is page content that a
+          visitor may well want to print.
+        */}
+        <div id="questions" className="border-t border-border">
+          <Faq />
+        </div>
       </main>
 
-      <footer className="border-t border-border">
-        <div className="mx-auto max-w-6xl px-6 py-8">
-          <p className="text-sm text-muted-foreground">
-            ImpactBridge — a demonstration platform. Payments run in test mode;
-            no real money is processed.
-          </p>
-        </div>
-      </footer>
+      {/*
+        The shared footer. It carries the same test-mode disclosure the inline
+        footer here used to, so the promise a visitor reads on the landing page
+        is the identical string they see inside the app.
+      */}
+      <SiteFooter />
     </div>
   );
 }

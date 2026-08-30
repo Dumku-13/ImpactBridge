@@ -128,6 +128,47 @@
   }
 
   /*
+   * ── The floating stack ──────────────────────────────────────────────────
+   *
+   * Two independent components live in the bottom-right corner — BackToTop and
+   * FloatingContact — and neither can see the other, so their offsets have to
+   * be agreed somewhere. Here, in one place, rather than as two magic numbers
+   * that drift apart the first time someone resizes a button.
+   *
+   * The rules, in order of who yields to whom:
+   *
+   *   - FloatingContact is ALWAYS mounted, so it takes the anchor slot at
+   *     `--float-bottom`. BackToTop comes and goes with scroll position, so it
+   *     stacks one slot above. Reversing them would make the permanent button
+   *     hop down the screen every time the scroll one disappeared.
+   *   - `--float-slot` is one button (2.75rem) plus the gap (0.75rem). Change
+   *     the button size and you must change this, which is why it is written as
+   *     the sum and not as "3.5rem".
+   *   - `--float-bottom` is overwritten inline on <html> by CookieBanner while
+   *     the banner is open, lifting the whole stack clear of it. That is a
+   *     RESIZE-OBSERVED height, not a guess: at 375px the banner's copy wraps to
+   *     a different number of lines than it does at 1440px.
+   *
+   * Nothing here belongs to a theme, so it sits outside the light/dark blocks.
+   *
+   * Z-ORDER, for the whole app, so the next person does not have to grep:
+   *   9999  .grain overlay        (inert, pointer-events: none)
+   *     60  toasts, skip link
+   *     50  modals, scroll progress, header dropdowns
+   *     40  the floating stack, the scroll spine
+   *     30  cookie banner, the landing header
+   *     20  the app-shell header
+   * The floating stack sits ABOVE the cookie banner (you must be able to reach
+   * back-to-top while deciding about consent) and BELOW modals (a dialog owns
+   * the screen while it is open).
+   */
+  :root {
+    --float-gap: 1.5rem;
+    --float-slot: calc(2.75rem + 0.75rem);
+    --float-bottom: var(--float-gap);
+  }
+
+  /*
    * Lets full-bleed sections break out of padded containers without pushing the
    * page sideways. `100vw` includes the scrollbar, so a `w-screen` breakout is
    * always a scrollbar's width too wide — this clips that overhang.
@@ -443,5 +484,163 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/*
+ * ── Print ──────────────────────────────────────────────────────────────────
+ *
+ * This is not a nicety on this product. Donors print donation receipts and
+ * NGOs print application detail pages to take into a room with a board in it,
+ * and both of those documents come out of the same components as the screen.
+ *
+ * The block is unlayered and last in the file on purpose: everything Tailwind
+ * emits sits in `@layer base/components/utilities` above it, so plain source
+ * order is enough to win without a specificity fight. The `!important`s are
+ * still there because utility classes set the same properties inline-ish at
+ * equal specificity and there is no arguing with `.bg-card` otherwise.
+ */
+@media print {
+  /*
+   * Force the light palette regardless of the visitor's theme.
+   *
+   * Without this, a visitor on dark mode prints a solid black rectangle the
+   * size of the page. That is not a cosmetic complaint: an A4 page of near-100%
+   * coverage is roughly a hundredth of a toner cartridge, it takes minutes to
+   * dry on an inkjet, and the text — paper-coloured on ink — often comes out
+   * unreadable anyway because printers cannot print white.
+   *
+   * `--paper` flips to true white as well: it is the theme-INDEPENDENT token,
+   * so it stays warm ivory in both themes and would otherwise lay a 92%-tint
+   * wash over every printed page.
+   */
+  :root,
+  .light,
+  .dark {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 0%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 0%;
+    --secondary: 0 0% 100%;
+    --secondary-foreground: 0 0% 0%;
+    --muted: 0 0% 100%;
+    --muted-foreground: 0 0% 28%;
+    --border: 0 0% 72%;
+    --paper: 0 0% 100%;
+    --olive: 0 0% 100%;
+  }
+
+  /*
+   * Strip every painted surface, then set one ink colour for all text.
+   *
+   * Both halves are needed together. Removing backgrounds alone leaves
+   * `text-[hsl(var(--paper))]` — the light type this site uses on its dark
+   * sections — as white on white, i.e. an invisible page. Setting one text
+   * colour alone leaves the dark grounds. Doing both gives black on white
+   * everywhere, which costs the palette and buys a document that is legible on
+   * any printer, including a mono laser that was going to flatten the vermilion
+   * to a mid grey regardless.
+   *
+   * Animations are killed too: `both` fill means a print taken mid-entrance
+   * would otherwise freeze a row at 0.3 opacity and print it as a ghost.
+   */
+  *,
+  *::before,
+  *::after {
+    background: transparent !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    color: hsl(var(--ink)) !important;
+    animation: none !important;
+    transition: none !important;
+  }
+
+  /* The paper-grain overlay is `position: fixed`, which some print engines
+     repeat on every single page. It is texture; it has no business on paper. */
+  .grain::after {
+    display: none !important;
+  }
+
+  /*
+   * Chrome that carries no information once the page is on paper. Kept as its
+   * OWN rule, not merged with the element selectors below: a comma-separated
+   * selector list is invalidated in full by one unsupported component, and
+   * `.no-print` is the hook every layout component here relies on.
+   */
+  .no-print {
+    display: none !important;
+  }
+
+  /*
+   * `:not(main *)` is load-bearing, not caution.
+   *
+   * <header> and <footer> are also used INSIDE pages — the application detail
+   * page titles itself with a <header>, the donation receipt signs itself off
+   * with a <footer> — and those are precisely the two documents anyone prints.
+   * A blanket `header, footer { display: none }` silently deletes the heading
+   * from the page the user asked for, which is the worst kind of print bug
+   * because nobody sees it until the paper comes out.
+   *
+   * <nav> has no such conflict: in-page navigation (pagination, dashboard tabs)
+   * is dead ink on paper, so all of it goes.
+   */
+  nav,
+  header:not(main *),
+  footer:not(main *) {
+    display: none !important;
+  }
+
+  /* The content column is centred and padded for a screen; paper has its own
+     margins (below) and does not want a second set inside them. */
+  main {
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /*
+   * Expand link destinations — but only in the body copy, and only for links
+   * that actually leave the site. An internal `/browse` href printed in
+   * brackets is noise, and icon links would print as a bracketed URL hanging
+   * off nothing. Router links are relative, so `^="http"` filters them out for
+   * free; `[aria-hidden]` catches the decorative ones.
+   */
+  main a[href^="http"]:not([aria-hidden])::after {
+    content: " (" attr(href) ")";
+    font-size: 0.85em;
+    font-weight: 400;
+    word-break: break-all;
+  }
+
+  /*
+   * Keep a record whole across a page break where the browser can manage it.
+   * `[class*="bg-card"]` is the honest selector for "a card" in this codebase —
+   * cards are Tailwind-composed divs with no semantic element to hook, and
+   * `bg-card` is the one token every one of them carries. A box taller than a
+   * page ignores this rather than overflowing, so it is safe to be generous.
+   */
+  main article,
+  main figure,
+  main table,
+  main li,
+  main [class*="bg-card"] {
+    break-inside: avoid;
+  }
+
+  /* A heading orphaned at the foot of a page is the other classic print bug. */
+  h1,
+  h2,
+  h3 {
+    break-after: avoid;
+  }
+
+  /* Borders survive as hairlines; without this they print at whatever width the
+     screen used, which at 2px reads as a heavy rule on paper. */
+  main [class*="border"] {
+    border-color: hsl(0 0% 72%) !important;
+  }
+
+  @page {
+    margin: 18mm 14mm;
   }
 }

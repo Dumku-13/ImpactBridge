@@ -7,7 +7,7 @@ import { passwordSchema } from "@impactbridge/shared";
 import { apiPost, ApiError } from "@/lib/api";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 import { Field } from "@/components/ui/Field";
 import { Alert } from "@/components/ui/Alert";
 
@@ -108,9 +108,8 @@ export function ResetPasswordPage() {
             error={errors.password?.message}
             hint="At least 8 characters, with an uppercase letter and a number."
           >
-            <Input
+            <PasswordInput
               id="password"
-              type="password"
               autoComplete="new-password"
               placeholder="••••••••"
               hasError={!!errors.password}
@@ -124,9 +123,8 @@ export function ResetPasswordPage() {
             htmlFor="confirmPassword"
             error={errors.confirmPassword?.message}
           >
-            <Input
+            <PasswordInput
               id="confirmPassword"
-              type="password"
               autoComplete="new-password"
               placeholder="••••••••"
               hasError={!!errors.confirmPassword}

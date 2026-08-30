@@ -4,6 +4,26 @@ import path from "node:path";
 
 export default defineConfig({
   plugins: [react()],
+  /*
+   * The footer's "Last updated" date, frozen at build time.
+   *
+   * The obvious implementation is `new Date()` in the footer component, and it
+   * is a lie: it renders today's date on every load forever, so a site nobody
+   * has touched in a year still claims it was updated this morning. A visitor
+   * checking whether the data is stale gets an answer that is always "no".
+   *
+   * `define` does a literal text substitution at build time, so the shipped
+   * bundle contains the moment the bundle was made — which is the only date the
+   * page can honestly claim. In dev it is the moment the server started, which
+   * is close enough to be useful and clearly not a stale-content claim.
+   *
+   * `JSON.stringify` is not decoration: `define` splices the value in as raw
+   * source text, so an unquoted date string would be substituted as a bare
+   * identifier and fail to parse.
+   */
+  define: {
+    __BUILD_DATE__: JSON.stringify(new Date().toISOString()),
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

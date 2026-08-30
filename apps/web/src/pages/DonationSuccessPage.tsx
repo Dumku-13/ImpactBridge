@@ -14,6 +14,7 @@ import {
 import { useOrganization } from "@/api/organizations";
 import { openReceipt } from "@/lib/receipt";
 import { Alert } from "@/components/ui/Alert";
+import { CopyButton } from "@/components/ui/CopyButton";
 import { CountUp } from "@/components/ui/CountUp";
 import { Reveal } from "@/components/ui/Reveal";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
@@ -410,8 +411,25 @@ export function DonationSuccessPage() {
             <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
               Reference
             </dt>
-            <dd className="tnum text-sm font-semibold text-foreground">
-              {donation.receiptNumber}
+            {/*
+              The one value on this page anyone actually needs to reproduce
+              elsewhere — quoting it in an email to the NGO, pasting it into an
+              expense claim. Everything else here is either a link or a figure
+              they can read. `.no-print` on the control because a copy button
+              means nothing on paper.
+            */}
+            <dd className="tnum flex items-center gap-1.5 text-sm font-semibold text-foreground">
+              {donation.receiptNumber ?? "—"}
+              {/* Nullable in the schema: a donation that was recorded before
+                  the receipt number was issued has nothing to copy, and an
+                  enabled button that copies "null" is worse than no button. */}
+              {donation.receiptNumber && (
+                <CopyButton
+                  value={donation.receiptNumber}
+                  label="Receipt reference"
+                  className="no-print"
+                />
+              )}
             </dd>
           </div>
           <div className="flex items-baseline justify-between gap-4 border-b border-border py-3.5">

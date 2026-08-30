@@ -13,6 +13,9 @@ import { Button } from "@/components/ui/Button";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { PageFallback } from "@/components/PageFallback";
 import { ThemeToggle } from "./ThemeToggle";
+import { MobileNav } from "./MobileNav";
+import { SiteFooter } from "./SiteFooter";
+import { SiteSearchTrigger } from "@/components/site/SiteSearch";
 import { ScrollProgress } from "./ScrollProgress";
 import { NotificationBell } from "./NotificationBell";
 import { cn } from "@/lib/utils";
@@ -110,17 +113,25 @@ export function AppLayout() {
             Impact<span className="text-primary">Bridge</span>
           </Link>
 
-          <NavItem to="/browse">Browse</NavItem>
-          <NavItem to="/grants">Grants</NavItem>
+          {/*
+            Desktop only. Below `sm` these same destinations live in MobileNav's
+            panel, so showing them twice would just re-create the 375px overflow
+            this header already has a comment about.
+          */}
+          <nav className="hidden items-center sm:flex">
+            <NavItem to="/browse">Browse</NavItem>
+            <NavItem to="/grants">Grants</NavItem>
+          </nav>
 
           {!user && (
             <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
+              <SiteSearchTrigger />
               <ThemeToggle />
-              {/* Hidden on the narrowest screens — "Get started" leads to the
-                  same place and sign-in is one tap from there. */}
+              {/* Hidden below `sm`: "Get started" leads to the same place, and
+                  the mobile menu carries an explicit Sign in besides. */}
               <Link
                 to="/login"
-                className="hidden h-9 items-center rounded-lg px-3 text-sm font-medium text-foreground transition-colors hover:bg-secondary xs:inline-flex sm:px-4"
+                className="hidden h-9 items-center rounded-lg px-3 text-sm font-medium text-foreground transition-colors hover:bg-secondary sm:inline-flex sm:px-4"
               >
                 Sign in
               </Link>
@@ -130,11 +141,13 @@ export function AppLayout() {
               >
                 Get started
               </Link>
+              <MobileNav onSignOut={handleLogout} />
             </div>
           )}
 
           {user && (
             <div className="ml-auto flex shrink-0 items-center gap-0.5 sm:gap-3">
+              <SiteSearchTrigger />
               <ThemeToggle />
               <NotificationBell signedIn={Boolean(user)} />
 
@@ -146,10 +159,19 @@ export function AppLayout() {
                   {ROLE_LABELS[user.role]}
                 </p>
               </div>
-              <Button variant="ghost" size="sm" onClick={handleLogout}>
+              {/* The mobile panel carries its own sign-out next to the identity
+                  block, so this one steps aside rather than sitting beside a
+                  hamburger that offers the same action. */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLogout}
+                className="hidden sm:inline-flex"
+              >
                 <LogOut className="h-4 w-4" />
                 <span className="hidden sm:inline">Sign out</span>
               </Button>
+              <MobileNav onSignOut={handleLogout} />
             </div>
           )}
         </div>
@@ -185,6 +207,8 @@ export function AppLayout() {
           </Suspense>
         </ErrorBoundary>
       </main>
+
+      <SiteFooter />
     </div>
   );
 }

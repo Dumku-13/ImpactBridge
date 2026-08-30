@@ -133,6 +133,17 @@ export default {
           from: { transform: "scaleX(0)" },
           to: { transform: "scaleX(1)" },
         },
+        /*
+         * The mobile menu sliding in from the right edge. Unlike the entrance
+         * animations above it starts fully opaque: the panel is a solid surface
+         * over a dimmed page, and fading it in as well would let the page behind
+         * show THROUGH the menu for the first frames, which reads as a rendering
+         * fault rather than as a transition.
+         */
+        "slide-in-right": {
+          from: { transform: "translateX(100%)" },
+          to: { transform: "translateX(0)" },
+        },
       },
       animation: {
         "fade-up": "fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both",
@@ -141,6 +152,7 @@ export default {
         "slide-down": "slide-down 0.2s cubic-bezier(0.22, 1, 0.36, 1) both",
         shimmer: "shimmer 1.8s infinite",
         "draw-in": "draw-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both",
+        "slide-in-right": "slide-in-right 0.22s cubic-bezier(0.22, 1, 0.36, 1) both",
       },
     },
   },

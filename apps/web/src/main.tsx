@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, type ComponentType } from "react";
+import React, { Suspense, lazy, type ComponentType, type ReactNode } from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -6,6 +6,10 @@ import { AuthProvider } from "./auth/AuthContext";
 import { ProtectedRoute, PublicOnlyRoute } from "./auth/ProtectedRoute";
 import { AppLayout } from "./components/layout/AppLayout";
 import { ToastProvider } from "./components/ui/Toast";
+import { CookieBanner } from "./components/layout/CookieBanner";
+import { BackToTop } from "./components/layout/BackToTop";
+import { FloatingContact } from "./components/layout/FloatingContact";
+import { useUtmCapture } from "./lib/analytics";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { PageFallback } from "./components/PageFallback";
 import { LoginPage } from "./pages/auth/LoginPage";
@@ -73,6 +77,45 @@ const FunderDashboard = lazyPage(() => import("./pages/dashboards/FunderDashboar
 const AdminDashboard = lazyPage(() => import("./pages/dashboards/AdminDashboard"), "AdminDashboard");
 
 /**
+ * Cross-cutting UI and side effects that belong to the whole document rather
+ * than to any one route.
+ *
+ * A component rather than loose calls in the render tree below, because
+ * `useUtmCapture` is a hook and hooks need a component to live in. It sits
+ * INSIDE the router (so anything added here later can navigate) but OUTSIDE the
+ * route table, so the consent banner is not remounted — and re-animated — on
+ * every navigation.
+ *
+ * The banner renders after `children` so it lands last in DOM order, which puts
+ * it after the page content in the tab order too. A consent prompt that steals
+ * the first Tab from the skip link would be its own accessibility bug.
+ */
+function GlobalUx({ children }: { children: ReactNode }) {
+  // Reads the campaign a visit arrived from, once, and only with consent.
+  // See lib/analytics.ts — nothing is captured while the banner is undecided.
+  useUtmCapture();
+
+  return (
+    <>
+      {children}
+      {/*
+        The floating stack and the banner live here, at the document level,
+        rather than in AppLayout — the landing page has its own shell and does
+        not render AppLayout at all, so anything mounted there would silently
+        vanish on the one page most visitors see first.
+
+        Order is deliberate: FloatingContact takes the anchor slot in the corner
+        and BackToTop stacks above it, both offset clear of the banner while it
+        is open. The arithmetic lives in the `--float-*` tokens in index.css.
+      */}
+      <FloatingContact />
+      <BackToTop />
+      <CookieBanner />
+    </>
+  );
+}
+
+/**
  * React Query owns all *server* state (fetching, caching, refetching, loading
  * and error flags) so we never hand-roll useEffect + useState for data.
  */
@@ -109,6 +152,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             auth pages) so no throw can ever blank the document again.
           */}
           <ToastProvider>
+          <GlobalUx>
           <ErrorBoundary>
             <Suspense fallback={<PageFallback />}>
               <Routes>
@@ -189,6 +233,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               </Routes>
             </Suspense>
           </ErrorBoundary>
+          </GlobalUx>
           </ToastProvider>
         </AuthProvider>
       </BrowserRouter>
