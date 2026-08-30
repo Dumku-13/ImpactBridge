@@ -10,3 +10,22 @@ allowBuilds:
   argon2: true
   esbuild: true
   prisma: true
+
+# Force patched versions of transitive dependencies carrying advisories that
+# their direct parents have not picked up yet. `pnpm audit --audit-level high`
+# runs in CI (see .github/workflows/ci.yml) and these are what it was flagging:
+#
+#   nanoid < 3.3.18   GHSA-2v37-7h3g-55p8 — reached only through postcss, which
+#                     vite and autoprefixer both pull in at BUILD time. A patch
+#                     bump inside the same major, so nothing can break on it.
+#   deepmerge-ts < 8  GHSA-ggr8-5vv4-36mx — reached only through @prisma/config,
+#                     i.e. the Prisma CLI reading a config file we control. This
+#                     one crosses a major version, which is why the build and
+#                     the migration job in CI are what prove it is safe.
+#
+# Neither package is reachable from the running API or the shipped browser
+# bundle; the overrides are here so the gate stays clean and genuinely blocking,
+# rather than lowered to hide two advisories nobody is triaging.
+overrides:
+  nanoid@<3.3.18: ">=3.3.18"
+  deepmerge-ts@<8.0.0: ">=8.0.0"

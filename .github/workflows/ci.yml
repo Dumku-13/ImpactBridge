@@ -98,3 +98,36 @@ jobs:
       # already has the schema would never catch that.
       - name: Apply migrations from scratch
         run: pnpm --filter @impactbridge/api exec prisma migrate deploy
+
+  audit:
+    name: Scan dependencies for known advisories
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.20.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Blocking on purpose, and it currently passes: the two high advisories
+      # this found (nanoid, deepmerge-ts — both transitive, both build-time
+      # only) are pinned to patched versions by the `overrides` block in
+      # pnpm-workspace.yaml rather than waved through.
+      #
+      # `--audit-level high` and not `moderate`: three moderate advisories are
+      # open against dev-only tooling with no patch published, and a gate that
+      # is red on every unrelated PR is a gate people learn to ignore. Raise
+      # this to moderate once those have fixes.
+      #
+      # Dependabot (see .github/dependabot.yml) opens the PRs that keep this
+      # green; this job is what stops one being merged past a new advisory.
+      - name: Audit
+        run: pnpm audit --audit-level high

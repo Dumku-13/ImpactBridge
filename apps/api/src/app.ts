@@ -4,6 +4,8 @@ import cookieParser from "cookie-parser";
 import { corsOrigins } from "./config/env.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 import { authRateLimit } from "./middleware/rateLimit.js";
+import { securityHeaders } from "./middleware/securityHeaders.js";
+import { forceHttps } from "./middleware/forceHttps.js";
 import { healthRouter } from "./routes/health.js";
 import { authRouter } from "./routes/auth.js";
 import { organizationRouter } from "./routes/organizations.js";
@@ -28,6 +30,31 @@ export function createApp(): Express {
   // Trust the proxy so req.ip is the real client address behind Vercel/Railway.
   // Without this the rate limiter would see one shared IP for every user.
   app.set("trust proxy", 1);
+
+  /*
+   * Announcing the framework and its version tells a scanner exactly which CVE
+   * list to work through. It buys us nothing, so it goes.
+   */
+  app.disable("x-powered-by");
+
+  /*
+   * Headers first, before anything can return a response.
+   *
+   * Mounted above the router stack rather than beside it so that EVERY reply
+   * carries them — including the 404, the error handler's output, and the
+   * webhook route below, none of which would be covered by a middleware placed
+   * after them. A security header that is present on the happy path and missing
+   * on the error path is the same as not having it.
+   */
+  app.use(securityHeaders);
+
+  /*
+   * Then the protocol check, before CORS and before any body is parsed: if the
+   * request is going to be refused for arriving over plain http, there is no
+   * reason to have spent work parsing it first. In development this is a
+   * no-op — see the isProduction guard inside.
+   */
+  app.use(forceHttps);
 
   // `credentials: true` lets the browser send our httpOnly refresh cookie.
   app.use(cors({ origin: corsOrigins, credentials: true }));

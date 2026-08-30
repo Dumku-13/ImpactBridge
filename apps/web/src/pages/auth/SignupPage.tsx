@@ -14,8 +14,11 @@ import { apiPost, ApiError } from "@/lib/api";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 import { Field } from "@/components/ui/Field";
 import { Alert } from "@/components/ui/Alert";
+import { HoneypotField } from "@/components/ui/HoneypotField";
+import { useBotGuard } from "@/hooks/useBotGuard";
 import { cn } from "@/lib/utils";
 
 const ROLE_OPTIONS: Array<{ value: SignupRole; icon: typeof Heart }> = [
@@ -38,10 +41,13 @@ export function SignupPage() {
     defaultValues: { name: "", email: "", password: "", role: "DONOR" },
   });
 
+  // The bot trap the server checks on /auth/register. See useBotGuard.
+  const { trapRef, getBotFields } = useBotGuard();
+
   const onSubmit = handleSubmit(async (values) => {
     setFormError(null);
     try {
-      await apiPost("/auth/register", values);
+      await apiPost("/auth/register", { ...values, ...getBotFields() });
       setRegisteredEmail(values.email);
     } catch (err) {
       setFormError(
@@ -97,6 +103,8 @@ export function SignupPage() {
     >
       <form onSubmit={onSubmit} className="space-y-5" noValidate>
         {formError && <Alert variant="error">{formError}</Alert>}
+
+        <HoneypotField ref={trapRef} />
 
         {/*
           Role picker as radio cards. `Controller` bridges RHF and a custom
@@ -186,9 +194,8 @@ export function SignupPage() {
           error={errors.password?.message}
           hint="At least 8 characters, with an uppercase letter and a number."
         >
-          <Input
+          <PasswordInput
             id="password"
-            type="password"
             autoComplete="new-password"
             placeholder="••••••••"
             hasError={!!errors.password}

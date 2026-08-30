@@ -13,7 +13,8 @@ import {
   setRefreshCookie,
 } from "../lib/auth/cookies.js";
 import { requireAuth } from "../middleware/requireAuth.js";
-import { rateLimit } from "../middleware/rateLimit.js";
+import { loginAccountRateLimit, rateLimit } from "../middleware/rateLimit.js";
+import { botGuard } from "../middleware/botGuard.js";
 import { HttpError } from "../middleware/errorHandler.js";
 
 export const authRouter: Router = Router();
@@ -47,8 +48,16 @@ const passwordResetLimit = rateLimit({
  * the actual security boundary.
  */
 
+/*
+ * `botGuard` runs on the three endpoints a spam script targets: the two that
+ * make us send mail to an address the sender chose (register, forgot-password)
+ * and the one worth guessing at (login). It reads `_hp` and `_ts` off the raw
+ * body BEFORE the schema parse strips them as unknown keys, which is why it is
+ * middleware here rather than a check inside each handler.
+ */
+
 /** POST /api/auth/register — create account, email a verification link. */
-authRouter.post("/register", async (req, res, next) => {
+authRouter.post("/register", botGuard, async (req, res, next) => {
   try {
     const input = registerSchema.parse(req.body);
     const user = await authService.register(input);
@@ -63,8 +72,15 @@ authRouter.post("/register", async (req, res, next) => {
   }
 });
 
-/** POST /api/auth/login — returns an access token + sets the refresh cookie. */
-authRouter.post("/login", async (req, res, next) => {
+/**
+ * POST /api/auth/login — returns an access token + sets the refresh cookie.
+ *
+ * Two limiters, on purpose: the router-level per-IP one from app.ts stops a
+ * single machine grinding through passwords, and `loginAccountRateLimit` stops
+ * a distributed attack concentrating on ONE account from many addresses.
+ * Neither covers the other's case.
+ */
+authRouter.post("/login", botGuard, loginAccountRateLimit, async (req, res, next) => {
   try {
     const input = loginSchema.parse(req.body);
     const { user, accessToken, refreshToken } = await authService.login(
@@ -129,7 +145,7 @@ authRouter.post("/verify-email", async (req, res, next) => {
 });
 
 /** POST /api/auth/forgot-password — always returns the same generic message. */
-authRouter.post("/forgot-password", passwordResetLimit, async (req, res, next) => {
+authRouter.post("/forgot-password", botGuard, passwordResetLimit, async (req, res, next) => {
   try {
     const input = forgotPasswordSchema.parse(req.body);
     await authService.forgotPassword(input);

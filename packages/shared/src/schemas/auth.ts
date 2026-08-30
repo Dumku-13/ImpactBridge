@@ -54,6 +54,34 @@ export const passwordSchema = z
   .regex(/[A-Z]/, "Include at least one uppercase letter")
   .regex(/[0-9]/, "Include at least one number");
 
+/**
+ * ── The bot trap ────────────────────────────────────────────────────────────
+ *
+ * Two fields carried by every publicly reachable auth form. They live here, in
+ * the shared package, for the same reason the password policy does: the browser
+ * that sends them and the server that judges them must agree on the shape, and
+ * a contract written twice is a contract that drifts.
+ *
+ * `_hp` is a honeypot — an off-screen input a sighted person never sees, a
+ * screen reader is told to ignore, and the tab order skips. Any value at all
+ * therefore means something filled it in that was not a human reading the form.
+ * `.max(0)` IS the check: the field is valid only while it is empty.
+ *
+ * `_ts` is when the form mounted. Reading a label, thinking of a password and
+ * typing an email takes a person seconds; a script POSTs in milliseconds. The
+ * server compares this against arrival time and rejects the implausibly fast.
+ *
+ * Both are `.optional()` on purpose. A stale cached bundle, a curl request while
+ * developing, or an integration test that predates this should still be able to
+ * authenticate — these are a speed bump against drive-by spam, not a security
+ * control. Rate limiting, Argon2id and email verification are what actually hold
+ * the door; treating a honeypot as though it did would be a mistake.
+ */
+export const botGuardFields = {
+  _hp: z.string().max(0).optional(),
+  _ts: z.number().int().optional(),
+};
+
 export const registerSchema = z.object({
   name: z
     .string()
@@ -63,16 +91,21 @@ export const registerSchema = z.object({
   email: emailSchema,
   password: passwordSchema,
   role: signupRoleSchema,
+  ...botGuardFields,
 });
 export type RegisterInput = z.infer<typeof registerSchema>;
 
 export const loginSchema = z.object({
   email: emailSchema,
   password: z.string().min(1, "Password is required"),
+  ...botGuardFields,
 });
 export type LoginInput = z.infer<typeof loginSchema>;
 
-export const forgotPasswordSchema = z.object({ email: emailSchema });
+export const forgotPasswordSchema = z.object({
+  email: emailSchema,
+  ...botGuardFields,
+});
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
 
 export const resetPasswordSchema = z.object({

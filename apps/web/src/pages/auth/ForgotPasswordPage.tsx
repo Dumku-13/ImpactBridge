@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Field } from "@/components/ui/Field";
 import { Alert } from "@/components/ui/Alert";
+import { HoneypotField } from "@/components/ui/HoneypotField";
+import { useBotGuard } from "@/hooks/useBotGuard";
 
 export function ForgotPasswordPage() {
   const [sentMessage, setSentMessage] = useState<string | null>(null);
@@ -26,6 +28,10 @@ export function ForgotPasswordPage() {
     defaultValues: { email: "" },
   });
 
+  // The bot trap: forgot-password makes us send mail to an address the sender
+  // chose, which is exactly what a spam script wants. See useBotGuard.
+  const { trapRef, getBotFields } = useBotGuard();
+
   const onSubmit = handleSubmit(async (values) => {
     setFormError(null);
     try {
@@ -33,7 +39,7 @@ export function ForgotPasswordPage() {
       // account exists, so this page cannot be used to discover who's registered.
       const res = await apiPost<{ message: string }>(
         "/auth/forgot-password",
-        values,
+        { ...values, ...getBotFields() },
       );
       setSentMessage(res.message);
     } catch (err) {
@@ -66,6 +72,8 @@ export function ForgotPasswordPage() {
       ) : (
         <form onSubmit={onSubmit} className="space-y-4" noValidate>
           {formError && <Alert variant="error">{formError}</Alert>}
+
+          <HoneypotField ref={trapRef} />
 
           <Field label="Email" htmlFor="email" error={errors.email?.message}>
             <Input

@@ -120,3 +120,71 @@ services:
       - path: /assets/*
         name: Cache-Control
         value: public, max-age=31536000, immutable
+
+      # ── Security headers for the DOCUMENT origin ──────────────────────────
+      #
+      # The API sets its own (see apps/api/src/middleware/securityHeaders.ts),
+      # but those only ride on JSON responses. Everything that actually protects
+      # the *page* — the CSP, framing, referrer policy — has to be set by
+      # whoever serves index.html, which is this static site.
+      #
+      # ⚠️  THE SCRIPT HASH BELOW IS TIED TO EXACT BYTES ⚠️
+      #
+      # index.html carries one inline <script>: the pre-paint theme switch that
+      # stops dark-mode users seeing a white flash on every cold load. Rather
+      # than open the policy with 'unsafe-inline' — which would forfeit most of
+      # what a CSP is for — it is allowed by SHA-256 hash.
+      #
+      # If you edit that script by so much as a space, the hash stops matching,
+      # the browser blocks it, and dark mode flashes white on first paint. The
+      # app still works, so nothing will fail loudly. Regenerate with:
+      #
+      #   pnpm --filter @impactbridge/web build
+      #   node -e "const f=require('fs'),c=require('crypto');const h=f.readFileSync('apps/web/dist/index.html','utf8');const m=h.match(/<script(?![^>]*src=)[^>]*>([\s\S]*?)<\/script>/);console.log('sha256-'+c.createHash('sha256').update(m[1].replace(/\r\n/g,'\n')).digest('base64'))"
+      #
+      # The `.replace(/\r\n/g,'\n')` is not tidying — it is the whole reason
+      # this hash is portable. A Windows checkout can leave CRLF in the file,
+      # and hashing those raw bytes gives a DIFFERENT digest that would then be
+      # wrong everywhere else. Browsers never see the CRs: the HTML parser
+      # normalises newlines to LF while tokenising, so CSP always hashes the LF
+      # form. Normalising here matches what the browser does, and it is also
+      # what Render checks out, since .gitattributes pins `* text=auto eol=lf`.
+      #
+      # Every source below was derived from what the app actually loads and then
+      # verified against a real build served with this exact header — not
+      # guessed. `font-src data:` in particular is not optional: Fontsource
+      # inlines small font subsets as data: URIs inside its CSS, and without it
+      # the display face silently fails to load.
+      - path: /*
+        name: Content-Security-Policy
+        value: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'sha256-n42NM3voYxt7Vym+bFHxtD+BAS4N4XkB16ABVesRAaw=' https://checkout.razorpay.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://res.cloudinary.com https://*.razorpay.com; font-src 'self' data:; connect-src 'self' https://*.razorpay.com; frame-src https://api.razorpay.com https://checkout.razorpay.com; worker-src 'self' blob:"
+
+      # `style-src 'unsafe-inline'` above is deliberate and unavoidable: React
+      # renders `style={{...}}` props as inline style attributes and GSAP writes
+      # transforms the same way, so removing it would break every animation on
+      # the landing page. It is also the least dangerous of the inline
+      # allowances — it cannot execute script.
+
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+
+      # Cross-origin links leak nothing but the origin; same-origin navigation
+      # keeps the full path, which the app itself relies on for return-to URLs.
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+
+      - path: /*
+        name: Permissions-Policy
+        value: camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()
+
+      # Two years with preload-eligible settings. Render serves this site over
+      # https only, so there is no http listener this can lock anyone out of.
+      - path: /*
+        name: Strict-Transport-Security
+        value: max-age=63072000; includeSubDomains; preload

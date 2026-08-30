@@ -9,14 +9,21 @@ import { ApiError } from "@/lib/api";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { PasswordInput } from "@/components/ui/PasswordInput";
+import { HoneypotField } from "@/components/ui/HoneypotField";
 import { Field } from "@/components/ui/Field";
 import { Alert } from "@/components/ui/Alert";
+import { useBotGuard } from "@/hooks/useBotGuard";
 
 export function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [formError, setFormError] = useState<string | null>(null);
+
+  // The honeypot input and the mount timestamp the server checks. See
+  // `botGuardFields` in @impactbridge/shared for what it does with them.
+  const { trapRef, getBotFields } = useBotGuard();
 
   /**
    * `zodResolver(loginSchema)` reuses the exact schema the API validates with.
@@ -35,7 +42,7 @@ export function LoginPage() {
   const onSubmit = handleSubmit(async (values) => {
     setFormError(null);
     try {
-      const user = await login(values);
+      const user = await login({ ...values, ...getBotFields() });
       // Send them back where they were headed, else to their role's dashboard.
       /*
        * Rebuild the full target, not just the path. ProtectedRoute stores the
@@ -72,6 +79,8 @@ export function LoginPage() {
       <form onSubmit={onSubmit} className="space-y-4" noValidate>
         {formError && <Alert variant="error">{formError}</Alert>}
 
+        <HoneypotField ref={trapRef} />
+
         <Field label="Email" htmlFor="email" error={errors.email?.message}>
           <Input
             id="email"
@@ -90,9 +99,8 @@ export function LoginPage() {
           htmlFor="password"
           error={errors.password?.message}
         >
-          <Input
+          <PasswordInput
             id="password"
-            type="password"
             autoComplete="current-password"
             placeholder="••••••••"
             hasError={!!errors.password}
