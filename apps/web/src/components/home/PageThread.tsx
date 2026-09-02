@@ -106,16 +106,35 @@ export function PageThread({ className }: { className?: string }) {
 
     let frame = 0;
 
+    /*
+     * Region geometry in DOCUMENT space, cached rather than read per frame.
+     *
+     * This region is the whole page, and `getBoundingClientRect()` on it was
+     * being called every scroll frame — a forced synchronous layout, sitting
+     * between other listeners' style writes. It only changes when the page
+     * reflows, and `fit()` already runs on exactly those occasions (resize plus
+     * the ResizeObserver below), so it is captured there instead.
+     *
+     *     rect.top === regionTop - scrollY
+     */
+    let regionTop = 0;
+    let regionHeight = 0;
+
+    const measureRegion = () => {
+      const rect = root.getBoundingClientRect();
+      regionTop = rect.top + window.scrollY;
+      regionHeight = rect.height;
+    };
+
     const update = () => {
       frame = 0;
 
-      const rect = root.getBoundingClientRect();
       /*
        * `clamp(top center)` → `clamp(bottom center)` as arithmetic: how far the
        * viewport's centre line has travelled through this region.
        */
-      const travelled = window.innerHeight / 2 - rect.top;
-      const progress = rect.height > 0 ? travelled / rect.height : 0;
+      const travelled = window.scrollY + window.innerHeight / 2 - regionTop;
+      const progress = regionHeight > 0 ? travelled / regionHeight : 0;
 
       root.style.setProperty("--th-p", Math.min(Math.max(progress, 0), 1).toFixed(4));
     };
@@ -127,9 +146,11 @@ export function PageThread({ className }: { className?: string }) {
 
     const onResize = () => {
       fit();
+      measureRegion();
       onScroll();
     };
 
+    measureRegion();
     update();
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onResize, { passive: true });

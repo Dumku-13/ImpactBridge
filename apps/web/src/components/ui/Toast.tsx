@@ -2,6 +2,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -80,6 +81,27 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     },
     [dismiss],
   );
+
+  /*
+   * Clear any still-pending dismissal on unmount.
+   *
+   * Each toast schedules a `setTimeout` that calls back into `dismiss`. Without
+   * this, unmounting the provider while a toast is on screen leaves those
+   * timers armed, holding a reference to the callback and firing a state update
+   * against a tree that no longer exists. React 18 no longer warns about that,
+   * which is precisely why it is worth clearing explicitly rather than relying
+   * on noticing it.
+   *
+   * In practice this provider lives at the app root and unmounts only on a full
+   * teardown — so this is a correctness measure, not a fix for an observed bug.
+   */
+  useEffect(() => {
+    const timers_ = timers.current;
+    return () => {
+      for (const timer of timers_.values()) clearTimeout(timer);
+      timers_.clear();
+    };
+  }, []);
 
   const value = useMemo(() => ({ toast }), [toast]);
 

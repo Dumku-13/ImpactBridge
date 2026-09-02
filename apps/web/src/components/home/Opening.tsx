@@ -126,7 +126,26 @@ export function Opening() {
         char.style.setProperty("--cy", String(Math.round((dy / distance) * (210 + Math.abs(dy) * 2.6))));
         char.style.setProperty("--cr", String(Math.round((dx / distance) * 26)));
       }
+
+      /*
+       * The zone's own geometry, in DOCUMENT space, cached for the scroll loop.
+       *
+       * `update()` used to call `root.getBoundingClientRect()` on every frame,
+       * which forces a synchronous layout — and it runs interleaved with the
+       * other scroll listeners' writes, so each read had to flush their pending
+       * style work first. Caching here makes the per-frame path pure
+       * arithmetic:  rect.top === zoneTop - scrollY.
+       *
+       * Only reflows change these, and every reflow path already re-runs
+       * `measure()`: resize, fonts landing, and the ResizeObserver below.
+       */
+      const zone = root.getBoundingClientRect();
+      zoneTop = zone.top + window.scrollY;
+      zoneHeight = zone.height;
     };
+
+    let zoneTop = 0;
+    let zoneHeight = 0;
 
     if (prefersReducedMotion()) return;
 
@@ -144,11 +163,10 @@ export function Opening() {
 
     const update = () => {
       frame = 0;
-      const rect = root.getBoundingClientRect();
       // The travel is the zone's height less the one viewport the sticky
-      // background occupies.
-      const travel = rect.height - window.innerHeight;
-      const progress = travel > 0 ? -rect.top / travel : 0;
+      // background occupies. `-rect.top` is `scrollY - zoneTop`; see measure().
+      const travel = zoneHeight - window.innerHeight;
+      const progress = travel > 0 ? (window.scrollY - zoneTop) / travel : 0;
       root.style.setProperty("--op-p", Math.min(Math.max(progress, 0), 1).toFixed(4));
     };
 
@@ -172,10 +190,20 @@ export function Opening() {
     // measurement is taken against fallback metrics.
     document.fonts?.ready.then(onResize);
 
+    /*
+     * Now that the zone's geometry is cached rather than read per frame, any
+     * height change that fires no resize event would leave the cache stale —
+     * and this zone contains the live record panels, which grow when their
+     * request lands. Watching the box itself catches that.
+     */
+    const observer = new ResizeObserver(onResize);
+    observer.observe(root);
+
     return () => {
       if (frame) cancelAnimationFrame(frame);
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onResize);
+      observer.disconnect();
       root.classList.remove("op-scrub");
     };
   }, [stats]);
@@ -422,7 +450,25 @@ export function Opening() {
                 Slightly translucent over the exploding headline, so the letters
                 still read through the panel rather than being boxed out.
               */}
-              <div className="rounded-sm border border-[hsl(var(--paper)/0.14)] bg-[hsl(var(--ink)/0.55)] p-6 backdrop-blur-[2px] sm:p-8">
+              {/*
+                No `backdrop-blur` here, deliberately — it used to carry
+                `backdrop-blur-[2px]`.
+
+                A backdrop filter forces the browser to re-sample and re-blur
+                everything painted underneath the element on every frame it
+                changes. This panel sits directly over the exploding headline,
+                whose letters are transformed on every scroll frame, so the
+                backdrop was being re-blurred continuously through the whole
+                opening — the single most expensive scroll section on the site.
+                AppLayout's header and Dialog's scrim both already refuse
+                backdrop-blur for exactly this reason; this one had slipped
+                through.
+
+                At 2px the blur was barely perceptible anyway. The ink fill goes
+                0.55 -> 0.62 to recover the legibility the blur was providing,
+                which costs nothing to paint.
+              */}
+              <div className="rounded-sm border border-[hsl(var(--paper)/0.14)] bg-[hsl(var(--ink)/0.62)] p-6 sm:p-8">
                 <p className="mb-6 flex items-baseline justify-between gap-4 border-b border-[hsl(var(--paper)/0.14)] pb-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-[hsl(var(--paper)/0.5)]">
                   {figure.panelTitle}
                   <span className="text-[hsl(var(--paper)/0.3)]">Live</span>

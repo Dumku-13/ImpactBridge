@@ -61,13 +61,48 @@ export function ScrollSpine({
 
     let frame = 0;
     let shown = "";
+    let lastActive: (typeof marks)[number] | undefined;
+
+    /*
+     * ── Geometry is measured, not re-read every frame ──────────────────────
+     *
+     * This loop used to call `getBoundingClientRect()` on every section on
+     * every frame — eight forced synchronous layouts per frame once the page
+     * progress read of `scrollHeight` is counted, while four other scroll
+     * listeners were doing their own reads and writes around it. That is the
+     * textbook layout-thrashing shape, and it is the most expensive thing that
+     * was happening during a scroll on this page.
+     *
+     * A section's position in the DOCUMENT only changes when the document
+     * reflows. So it is measured on resize (and by a ResizeObserver, for
+     * images and fetched panels landing), cached in document space, and the
+     * per-frame work becomes pure arithmetic against `window.scrollY` with no
+     * layout read at all:
+     *
+     *     rect.top    === docTop - scrollY
+     *     rect.bottom === docTop + height - scrollY
+     */
+    let scrollable = 0;
+    let readingLine = 0;
+    const geometry = new Map<string, { top: number; height: number }>();
+
+    const measure = () => {
+      const scrollY = window.scrollY;
+      scrollable = document.documentElement.scrollHeight - window.innerHeight;
+      readingLine = window.innerHeight * 0.45;
+
+      for (const mark of marks) {
+        if (!mark.target) continue;
+        const rect = mark.target.getBoundingClientRect();
+        geometry.set(mark.id, { top: rect.top + scrollY, height: rect.height });
+      }
+    };
 
     const update = () => {
       frame = 0;
 
-      const doc = document.documentElement;
-      const scrollable = doc.scrollHeight - window.innerHeight;
-      const progress = scrollable > 0 ? window.scrollY / scrollable : 0;
+      const scrollY = window.scrollY;
+      const progress = scrollable > 0 ? scrollY / scrollable : 0;
       fill.style.transform = `scaleY(${Math.min(Math.max(progress, 0), 1)})`;
 
       /*
@@ -81,29 +116,39 @@ export function ScrollSpine({
        * exactly that — a thin rule of figures between two tall chapters — and
        * it never once lit up until this was fixed.
        */
-      const readingLine = window.innerHeight * 0.45;
+      const line = scrollY + readingLine;
       let active = marks[0];
       let crossing: (typeof marks)[number] | undefined;
 
       for (const mark of marks) {
-        if (!mark.target) continue;
-        const rect = mark.target.getBoundingClientRect();
-        if (rect.top <= readingLine) active = mark;
-        if (rect.top <= readingLine && rect.bottom > readingLine) crossing = mark;
+        const box = geometry.get(mark.id);
+        if (!box) continue;
+        if (box.top <= line) active = mark;
+        if (box.top <= line && box.top + box.height > line) crossing = mark;
       }
 
       if (crossing) active = crossing;
 
-      for (const mark of marks) {
-        if (!mark.node) continue;
-        mark.node.dataset.active = String(mark === active);
-      }
+      /*
+       * Only touch the DOM when the active section actually changes. The old
+       * version reassigned `dataset.active` on every mark on every frame;
+       * even where the browser short-circuits an identical attribute write,
+       * doing it seven times a frame for nothing is work worth not doing.
+       */
+      if (active !== lastActive) {
+        lastActive = active;
 
-      // Only write when it changes: assigning textContent every frame would
-      // restart the CSS transition on the label continuously.
-      if (active && active.label !== shown) {
-        shown = active.label;
-        label.textContent = active.label;
+        for (const mark of marks) {
+          if (!mark.node) continue;
+          mark.node.dataset.active = String(mark === active);
+        }
+
+        // Guarded for the same reason: assigning textContent restarts the
+        // label's CSS transition.
+        if (active && active.label !== shown) {
+          shown = active.label;
+          label.textContent = active.label;
+        }
       }
     };
 
@@ -112,14 +157,26 @@ export function ScrollSpine({
       frame = requestAnimationFrame(update);
     };
 
+    const onResize = () => {
+      measure();
+      onScroll();
+    };
+
+    measure();
     update();
+
+    // Document height changes that fire no resize event: fonts swapping,
+    // images landing, the fetched record panels arriving above these sections.
+    const observer = new ResizeObserver(onResize);
+    observer.observe(document.documentElement);
     window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll, { passive: true });
+    window.addEventListener("resize", onResize, { passive: true });
 
     return () => {
       if (frame) cancelAnimationFrame(frame);
       window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
+      window.removeEventListener("resize", onResize);
+      observer.disconnect();
     };
   }, [sections]);
 
@@ -153,7 +210,9 @@ export function ScrollSpine({
         <div className="relative w-px bg-[hsl(40_24%_96%/0.28)]">
           <div
             ref={fillRef}
-            className="absolute inset-x-0 top-0 h-full origin-top scale-y-0 bg-[hsl(40_24%_96%)]"
+            /* Own layer: the scaleY is written every scroll frame, so keeping
+               it composited avoids repainting the rail underneath it. */
+            className="absolute inset-x-0 top-0 h-full origin-top scale-y-0 bg-[hsl(40_24%_96%)] will-change-transform"
           />
         </div>
 

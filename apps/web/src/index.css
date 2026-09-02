@@ -308,6 +308,27 @@
     z-index: 9999;
     pointer-events: none;
     opacity: 0.035;
+    /*
+     * Promote this to its own compositor layer.
+     *
+     * It is a viewport-sized `fixed` overlay sitting above EVERYTHING at
+     * z-9999. Un-promoted, it shares a layer with the page beneath it, so the
+     * browser cannot scroll that area by simply shifting existing pixels — it
+     * has to re-composite (and in the worst case re-rasterise this noise
+     * texture over) the newly exposed strip on every single scroll frame.
+     *
+     * `translateZ(0)` hands it a layer of its own, so the page scrolls
+     * underneath it and this never repaints. `will-change: transform` alone
+     * would do the same, but is a hint the browser may drop under memory
+     * pressure; the transform is a guarantee. One viewport-sized layer is a
+     * cheap thing to own outright.
+     *
+     * `contain: strict` tells the engine nothing inside can affect layout or
+     * paint outside these bounds, so it never needs to consider this element
+     * when invalidating the rest of the page.
+     */
+    transform: translateZ(0);
+    contain: strict;
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   }
 
@@ -389,8 +410,36 @@
    * It starts at nothing: the first screen is the headline alone, at full
    * strength, with no veil over it.
    */
+  /*
+   * ── Composited, not repainted ───────────────────────────────────────────
+   *
+   * This used to animate the background COLOUR:
+   *
+   *     background: hsl(var(--ink) / calc(var(--op-p) * 0.82));
+   *
+   * which looks identical and costs far more. A colour change is a paint
+   * operation, so every scroll frame repainted this element — and it is
+   * `absolute inset-0` over a full-height sticky zone, so that is a
+   * viewport-sized repaint per frame, on the most scroll-intensive section of
+   * the site.
+   *
+   * Animating `opacity` on a solid fill produces exactly the same pixels and
+   * runs on the compositor: the layer is rasterised once and then re-blended,
+   * with no repaint at all. This is safe here specifically because the element
+   * is empty — opacity applies to a subtree, so on a div WITH children this
+   * substitution would also fade the children and would not be equivalent.
+   *
+   * The base rule keeps `opacity: 0` so a browser that never runs the scrub
+   * script gets no veil, exactly as before.
+   */
+  .op-wash {
+    background: hsl(var(--ink));
+    opacity: 0;
+  }
+
   .op-scrub .op-wash {
-    background: hsl(var(--ink) / calc(var(--op-p, 0) * 0.82));
+    opacity: calc(var(--op-p, 0) * 0.82);
+    will-change: opacity;
   }
 
   /*

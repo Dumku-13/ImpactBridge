@@ -19,10 +19,27 @@ export function ScrollProgress() {
 
     let frame = 0;
 
+    /*
+     * The scrollable distance is CACHED rather than read per frame.
+     *
+     * `scrollHeight` is a layout property: reading it forces the browser to
+     * flush any pending style and layout work before it can answer. Doing that
+     * inside the scroll loop means a forced synchronous layout on every frame,
+     * on a page where several other scroll listeners are also reading and
+     * writing — the classic layout-thrashing pattern.
+     *
+     * It only actually changes when the document resizes, so it is measured on
+     * resize and by a ResizeObserver (images landing, fonts swapping, a panel
+     * of fetched records arriving) and simply read from a variable in between.
+     */
+    let scrollable = 0;
+
+    const measure = () => {
+      scrollable = document.documentElement.scrollHeight - window.innerHeight;
+    };
+
     const update = () => {
       frame = 0;
-      const doc = document.documentElement;
-      const scrollable = doc.scrollHeight - window.innerHeight;
       // A page that doesn't scroll has no progress to report — leave the rail
       // empty rather than showing a full bar on a short page.
       const progress = scrollable > 0 ? window.scrollY / scrollable : 0;
@@ -34,14 +51,25 @@ export function ScrollProgress() {
       frame = requestAnimationFrame(update);
     };
 
+    const onResize = () => {
+      measure();
+      onScroll();
+    };
+
+    measure();
     update();
     window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll, { passive: true });
+    window.addEventListener("resize", onResize, { passive: true });
+
+    // Catches height changes that no resize event reports.
+    const observer = new ResizeObserver(onResize);
+    observer.observe(document.documentElement);
 
     return () => {
       if (frame) cancelAnimationFrame(frame);
       window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
+      window.removeEventListener("resize", onResize);
+      observer.disconnect();
     };
   }, []);
 
@@ -50,9 +78,11 @@ export function ScrollProgress() {
       aria-hidden="true"
       className="pointer-events-none fixed inset-x-0 top-0 z-50 h-0.5"
     >
+      {/* `will-change: transform` keeps the bar on its own compositor layer,
+          so the per-frame scaleX never triggers a repaint of the rail. */}
       <div
         ref={barRef}
-        className="h-full origin-left scale-x-0 bg-primary"
+        className="h-full origin-left scale-x-0 bg-primary will-change-transform"
       />
     </div>
   );

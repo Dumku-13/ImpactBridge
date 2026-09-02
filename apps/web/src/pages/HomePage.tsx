@@ -29,6 +29,9 @@ const SPINE = [
   { id: "numbers", label: "The numbers" },
   { id: "work", label: "The work" },
   { id: "causes", label: "The causes" },
+  // The FAQ is a chapter of the page like any other; leaving it out meant the
+  // rail emptied out and the last chapter stayed lit for the final screenful.
+  { id: "questions", label: "Questions" },
 ] as const;
 
 /*
