@@ -6,6 +6,57 @@ A grant & nonprofit funding management platform — connecting **NGOs**, **donor
 
 ---
 
+## ▶ Live
+
+**<https://impactbridge-web.onrender.com>**
+
+Deployed on Render from `render.yaml` — a Dockerised Express API, a static Vite
+frontend, and Postgres. The site calls the API at relative `/api/*` paths through
+a rewrite, so the browser only ever sees one origin and the auth cookie stays
+same-origin.
+
+Seeded with 8 organisations (7 verified), ~500 donations and 6 open grant
+programmes, so nothing is an empty state.
+
+### Signing in
+
+| Role | Email | Password |
+| --- | --- | --- |
+| Donor | `donor@impactbridge.dev` | `Password123` |
+| Nonprofit | `ngo@impactbridge.dev` | `Password123` |
+| Funder | `funder@impactbridge.dev` | `Password123` |
+
+The seed also creates a platform-admin account, which is not listed here
+because it can verify and suspend organisations. Be aware that this is a speed
+bump and not a control: the account follows the same naming as the rest and the
+seeded password is documented further down for local development, so treat the
+live instance as a demo anyone can poke at — and change that password on the
+deployed database if you ever want it to mean something.
+
+### Donating
+
+Payments run **Razorpay in TEST mode**. No real money moves and no live key can
+ever be used — the server refuses to boot on an `rzp_live_` key.
+
+Use a **domestic** test card: `4100 2800 0000 1007`, any future expiry, any CVV,
+and any 4–10 digit OTP. Razorpay's international test cards are blocked, as
+international payments are off by default.
+
+The full loop is real: order → gateway → signed webhook → verified capture →
+gapless receipt number → updated dashboards.
+
+### Two things to expect
+
+**The first request may take ~50 seconds.** The free tier sleeps after 15 minutes
+idle. Open it once and it stays warm.
+
+**Registration emails are not delivered.** Every message routes through one
+`sendMail` function that currently logs instead of sending, so the verification
+link only reaches the server console. Use the accounts above. Wiring a provider
+is a one-file change — see `apps/api/src/lib/mailer.ts`.
+
+---
+
 ## What makes it interesting
 
 Most "donation apps" stop at a payment button. ImpactBridge models the part that actually happens in the sector — **the grant lifecycle** — as a guarded state machine:
@@ -22,7 +73,7 @@ Every transition is validated server-side against the actor's role and the appli
 | Role | Can do |
 | --- | --- |
 | **NGO Admin** | Build org profile, upload legal docs, add causes & impact metrics, receive donations, apply for grants, post progress reports |
-| **Donor** | Browse & search NGOs, donate (one-off or monthly), download receipts, bookmark and follow orgs |
+| **Donor** | Browse & search NGOs, donate (one-off), download receipts, bookmark and follow orgs |
 | **Funder / Company** | Post grants with eligibility rules, review & compare applicants, approve/reject, allocate funds, leave reviewer comments |
 | **Platform Admin** | Verify NGOs, suspend fraudulent orgs, moderate content, view platform analytics & audit logs |
 
@@ -32,7 +83,7 @@ Every transition is validated server-side against the actor's role and the appli
 
 **Frontend** — React · TypeScript · Vite · Tailwind CSS · shadcn/ui · React Query · React Hook Form · Zod
 **Backend** — Node.js · Express · TypeScript · Prisma · PostgreSQL · JWT · Socket.io
-**Infrastructure** — Docker · Cloudinary · GitHub Actions · Vercel + Railway
+**Infrastructure** — Docker · Render (Postgres + Docker API + static site, via `render.yaml`) · Cloudinary · GitHub Actions
 
 ### Monorepo layout
 
@@ -52,7 +103,11 @@ The `shared` package is the point: a schema is written **once** and used for API
 
 ## Getting started
 
-**Prerequisites:** Node 20+, pnpm, Docker Desktop.
+**Prerequisites:** Node 22+, pnpm, Docker Desktop.
+
+Node 22 is a hard floor, not a preference: the pinned pnpm 11 requires the
+`node:sqlite` built-in, which does not exist before 22. On Node 20 pnpm itself
+crashes with `ERR_UNKNOWN_BUILTIN_MODULE` before it installs anything.
 
 ```bash
 pnpm install
