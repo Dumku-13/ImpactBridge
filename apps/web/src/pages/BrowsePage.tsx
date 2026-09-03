@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/Input";
 import { Alert } from "@/components/ui/Alert";
 import { useDebounce } from "@/hooks/useDebounce";
 import { BrowseOpening } from "@/components/browse/BrowseOpening";
+import { PageThread } from "@/components/home/PageThread";
 import { useScrollTriggerRefresh } from "@/lib/gsap";
 import { cn } from "@/lib/utils";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
@@ -130,7 +131,19 @@ export function BrowsePage() {
     (searchParams.get("minRating") ? 1 : 0);
 
   return (
-    <div className="space-y-6">
+    /*
+      The drawn thread from the landing page, reused here.
+
+      Two things it needs from its host and neither is optional. It is
+      `absolute inset-0`, so the wrapper must be `relative` or it escapes to
+      the nearest positioned ancestor and spans the whole app shell. And it
+      sits at `z-[5]`, so the content has to be lifted to `z-10` — otherwise
+      the line draws OVER the cards instead of threading behind them.
+    */
+    <div className="relative">
+      <PageThread />
+
+      <div className="relative z-10 space-y-6">
       {/*
         The opening sequence, driven by the same records the grid below renders.
         Only mounted once data exists — a cinematic intro built on skeletons
@@ -371,6 +384,7 @@ export function BrowsePage() {
           )}
         </>
       )}
+      </div>
     </div>
   );
 }
