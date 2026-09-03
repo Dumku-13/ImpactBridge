@@ -332,8 +332,8 @@ token refresh, hashed and expiring reset tokens, production error redaction,
    verification links exist only in the terminal, so a real signup cannot be
    completed in a demo. Needs a Resend account and key — also the user's.
 3. **No refunds.** `TransactionType.REFUND` and `DonationStatus.REFUNDED` are in
-   the schema and never written by any code path. Deliberately left alone in the
-   run-up to the interview: it is invisible in a demo and it is money code.
+   the schema and never written by any code path. Deliberately left alone: it is
+   invisible in a demo and it is money code.
 4. **No donor account page.** NGOs and funders can edit their profile; a donor
    cannot change their name or password. Note this needs API work too — there is
    no self-update endpoint at all (`PATCH /auth/me` and a change-password route

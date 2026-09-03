@@ -66,12 +66,12 @@ Set them in the dashboard. **Never in this file or in `render.yaml`.**
 ## Things worth knowing before you demo it
 
 **The free tier sleeps.** After 15 minutes idle, the API spins down and the next
-request takes ~50 seconds to wake it. Before walking into the interview, open the
-site once and let it load — then it stays warm for the conversation. If you want
-to be certain, upgrade the API service to the cheapest paid tier for the day.
+request takes ~50 seconds to wake it. Open the site once before you need to show
+it and let it load — then it stays warm. If you want to be certain, upgrade the
+API service to the cheapest paid tier for the day.
 
-**The free Postgres expires after 30 days.** Fine for an interview, not for
-anything you leave running. Render will email you.
+**The free Postgres expires after 30 days.** Fine for a demo, not for anything
+you leave running. Render will email you.
 
 **Migrations run on container start**, not at build. A deploy therefore cannot
 serve traffic against a schema the code does not expect.

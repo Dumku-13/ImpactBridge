@@ -23,11 +23,27 @@
 #   pnpm --filter @impactbridge/api db:seed:profiles
 #   pnpm --filter @impactbridge/api exec tsx prisma/seedDonations.ts
 
-databases:
-  - name: impactbridge-db
-    databaseName: impactbridge
-    user: impactbridge
-    plan: free
+# ── The database is referenced, NOT declared ────────────────────────────────
+#
+# There is deliberately no `databases:` block here.
+#
+# Render's free tier allows exactly ONE Postgres instance per workspace, and
+# `impactbridge-db` already exists and holds the seeded demo data. With the
+# database declared here, a sync tried to CREATE a second one — Render
+# generated the suffixed name `impactbridge-db-v3dn` to avoid the collision and
+# then failed against the free-tier quota.
+#
+# Removing the declaration is the fix, and it is safe: syncing a Blueprint
+# never deletes an existing resource, even one that has been dropped from the
+# file. The database is simply no longer MANAGED by this Blueprint — it keeps
+# its data, its connection string and its dashboard entry untouched.
+#
+# The API still binds to it through `fromDatabase` below. That works precisely
+# because a Blueprint may reference a resource it does not define, provided the
+# resource exists in the same workspace — which this one does.
+#
+# If the database is ever recreated from scratch, either restore this block or
+# create it in the dashboard first and leave this reference as it is.
 
 services:
   # ── API ───────────────────────────────────────────────────────────────────
@@ -47,6 +63,9 @@ services:
         value: production
       - key: PORT
         value: 4000
+      # Binds to the EXISTING impactbridge-db (see the note above the services
+      # block). `connectionString` resolves to the internal URL when the service
+      # and the database share a region, so this traffic never leaves Render.
       - key: DATABASE_URL
         fromDatabase:
           name: impactbridge-db
@@ -108,6 +127,29 @@ services:
     # SPA: every unknown path is a client route, not a 404 — but /api must be
     # proxied FIRST or the rewrite below would swallow it.
     routes:
+      # ⚠️  THE ONE VALUE THAT CANNOT BE DERIVED ⚠️
+      #
+      # A static site's rewrite destination must be a LITERAL URL. Render's
+      # Blueprint spec has no service interpolation here — `fromService` works
+      # in `envVars`, but not in `routes` — so this host cannot be resolved
+      # automatically the way DATABASE_URL is.
+      #
+      # It must match the API service's REAL hostname, which Render assigns at
+      # creation. It is `impactbridge-api.onrender.com` only if that subdomain
+      # was free; onrender.com subdomains are globally unique, so a taken name
+      # gets a suffix (e.g. `impactbridge-api-a7x2.onrender.com`).
+      #
+      # Find it at the top of the API service's page in the dashboard, then
+      # make this line match it exactly.
+      #
+      # Getting it wrong FAILS QUIETLY in the worst way: the site loads, looks
+      # perfect, and every single API call 404s — so the pages render their
+      # empty states and it reads as "the database is broken" rather than as a
+      # routing typo. Verify with:
+      #
+      #     curl -s -o /dev/null -w '%{http_code}\n' https://<web-host>/api/health
+      #
+      # 200 means the rewrite is right. 404 means this line is wrong.
       - type: rewrite
         source: /api/*
         destination: https://impactbridge-api.onrender.com/api/*
