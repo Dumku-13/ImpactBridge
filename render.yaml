@@ -110,11 +110,27 @@ services:
           property: host
       - key: CURRENCY
         value: inr
-      # Payments default to the offline mock so the deploy works with no keys at
-      # all. Set PAYMENT_PROVIDER=razorpay plus the two keys in the dashboard to
-      # switch to Razorpay TEST mode — never commit them here.
+      # ⚠️  `sync: false`, NOT a hardcoded value. Do not put one back. ⚠️
+      #
+      # This used to read `value: mock`, and that silently broke live payments.
+      #
+      # Razorpay TEST mode was enabled by setting PAYMENT_PROVIDER=razorpay in
+      # the dashboard. It worked — and then the next commit that touched this
+      # file re-synced the Blueprint, which overwrote the dashboard value back
+      # to `mock`. Render is explicit that dashboard changes conflicting with
+      # the Blueprint are overwritten on the next sync, so a hardcoded value
+      # here means the Blueprint wins every time and the gateway silently
+      # reverts. The logs show exactly that:
+      #
+      #   17:40  💳 Payments: Razorpay TEST mode …
+      #   17:41  🧪 Payments are using the MOCK provider   <- after a sync
+      #
+      # `sync: false` hands ownership to the dashboard, the same treatment the
+      # Razorpay keys already get. Leaving it UNSET is also safe: the app falls
+      # back to Razorpay when credentials are present and the mock when they
+      # are not, so a deploy with no keys still works end to end.
       - key: PAYMENT_PROVIDER
-        value: mock
+        sync: false
       - key: RAZORPAY_KEY_ID
         sync: false
       - key: RAZORPAY_KEY_SECRET

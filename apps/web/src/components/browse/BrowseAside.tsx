@@ -142,9 +142,15 @@ export function BrowseAside({
       aria-hidden="true"
       className={cn(
         "pointer-events-none absolute top-6 hidden sm:block",
+        /*
+          Widths are bounded by the plate offsets, not chosen freely. The
+          column is max-w-6xl (1152px); a 70% plate leaves 346px on the right
+          and a 56% one leaves 507px on the left. Minus the margin, 26% and 38%
+          are about as wide as these can go without colliding with the plate.
+        */
         side === "right"
-          ? "left-full ml-10 w-[24%] text-left"
-          : "right-full mr-10 w-[34%] text-right",
+          ? "left-full ml-8 w-[26%] text-left"
+          : "right-full mr-10 w-[38%] text-right",
       )}
     >
       <DrawnArc mirrored={side === "left"} />
@@ -156,7 +162,7 @@ export function BrowseAside({
         that under the photography.
       */}
       <blockquote className="mt-6">
-        <p className="font-display text-lg leading-[1.35] tracking-[-0.01em] text-[hsl(var(--paper)/0.82)]">
+        <p className="font-display text-xl leading-[1.3] tracking-[-0.015em] text-[hsl(var(--paper)/0.88)] lg:text-2xl">
           &ldquo;{mission}&rdquo;
         </p>
         {place && (
