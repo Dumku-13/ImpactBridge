@@ -49,3 +49,7 @@ pictures for reference and use for frontend/
 
 # Claude Code session transcripts — tooling history, not project source.
 .claude-code-history/
+
+# Interview-prep analysis of this project. Names the company being applied to
+# and carries personal notes — deliberately kept out of a public repository.
+ImpactBridge-Technical-Analysis.pdf
