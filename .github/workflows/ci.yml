@@ -22,7 +22,7 @@ jobs:
     env:
       DATABASE_URL: "postgresql://impactbridge:impactbridge@localhost:5432/impactbridge?schema=public"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # pnpm must be on PATH before setup-node's cache: pnpm option can shell out to it.
       - uses: pnpm/action-setup@v4
@@ -76,7 +76,7 @@ jobs:
     env:
       DATABASE_URL: "postgresql://impactbridge:impactbridge@localhost:5432/impactbridge?schema=public"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: pnpm/action-setup@v4
         with:
@@ -103,7 +103,7 @@ jobs:
     name: Scan dependencies for known advisories
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: pnpm/action-setup@v4
         with:
