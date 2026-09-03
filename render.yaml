@@ -54,10 +54,26 @@ services:
     dockerfilePath: ./apps/api/Dockerfile
     dockerContext: .
     healthCheckPath: /api/health
-    # Migrations run at START, not at build: the database only exists at
-    # runtime, and running them here means a deploy can never serve traffic
-    # against a schema the code does not expect.
-    dockerCommand: sh -c "./node_modules/.bin/prisma migrate deploy --schema=./prisma/schema.prisma && node dist/index.js"
+    # NO `dockerCommand` here, deliberately. Do not reintroduce one.
+    #
+    # It used to read:
+    #
+    #   dockerCommand: sh -c "./node_modules/.bin/prisma migrate deploy … && node dist/index.js"
+    #
+    # and it failed every deploy with exit 127:
+    #
+    #   sh: ./node_modules/.bin/prisma migrate deploy … && node dist/index.js: not found
+    #
+    # Render runs this value through a shell already, so the explicit `sh -c`
+    # wrapped it twice — the inner command reached the shell as ONE quoted
+    # token, which it then tried to execute as a single program name. The error
+    # names the whole string, which reads like a missing `dist/index.js` and is
+    # really a quoting bug; the image was correct the entire time.
+    #
+    # The image's own CMD now runs apps/api/docker-start.sh, which applies
+    # migrations and then execs the server. Migrations still run at START, not
+    # at build — the database only exists at runtime, so a deploy can never
+    # serve traffic against a schema the code does not expect.
     envVars:
       - key: NODE_ENV
         value: production

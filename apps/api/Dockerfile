@@ -77,6 +77,23 @@ COPY --from=build /deploy /app
 # an install first and fails in this dependency-complete tree.
 RUN ./node_modules/.bin/prisma generate --schema=./prisma/schema.prisma
 
+# The start sequence lives in a script, not in a CMD string and not in
+# render.yaml's `dockerCommand`.
+#
+# Render runs `dockerCommand` through a shell of its own. A value of
+# `sh -c "a && b"` therefore gets wrapped twice: the inner command arrives as a
+# single quoted token, the shell tries to exec it as one program name, and the
+# container dies with exit 127 and
+#
+#   sh: ./node_modules/.bin/prisma migrate deploy … && node dist/index.js: not found
+#
+# — which looks like a missing build output and is really a quoting bug. A
+# one-token CMD has no quoting left to get wrong.
+#
+# `--chmod=755` rather than a separate `RUN chmod`: it sets the bit in the same
+# layer and does not depend on the executable bit surviving a Windows checkout.
+COPY --chmod=755 apps/api/docker-start.sh ./docker-start.sh
+
 # Run unprivileged. The node image ships a `node` user for exactly this.
 USER node
 
@@ -87,4 +104,6 @@ EXPOSE 4000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||4000)+'/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
-CMD ["node", "dist/index.js"]
+# Migrations then server, via the script above. Overriding this in Render is
+# unnecessary and is what broke the deploy — leave `dockerCommand` unset.
+CMD ["./docker-start.sh"]
