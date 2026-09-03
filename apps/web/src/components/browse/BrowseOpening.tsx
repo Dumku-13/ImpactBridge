@@ -8,6 +8,7 @@ import {
 import { loops, posters } from "@/content/media";
 import { gsap, prefersReducedMotion } from "@/lib/gsap";
 import { cn } from "@/lib/utils";
+import { BrowseAside } from "./BrowseAside";
 
 /**
  * The Browse opening.
@@ -169,6 +170,18 @@ export function BrowseOpening({
                 hovered && hovered !== org.id && "opacity-35",
               )}
             >
+              {/*
+                The gutter alternates with the plate offsets above: plates at
+                i%3===1 are pushed right, so their empty column is on the LEFT.
+                Everything else leaves its gutter on the right.
+              */}
+              <BrowseAside
+                mission={org.mission}
+                city={org.city}
+                state={org.state}
+                side={i % 3 === 1 ? "left" : "right"}
+              />
+
               <div className="relative overflow-hidden">
                 <div className="aspect-[16/10] overflow-hidden bg-[hsl(var(--olive))]">
                   {org.coverUrl && (
