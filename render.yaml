@@ -146,29 +146,28 @@ services:
       # ⚠️  THE ONE VALUE THAT CANNOT BE DERIVED ⚠️
       #
       # A static site's rewrite destination must be a LITERAL URL. Render's
-      # Blueprint spec has no service interpolation here — `fromService` works
-      # in `envVars`, but not in `routes` — so this host cannot be resolved
-      # automatically the way DATABASE_URL is.
+      # Blueprint spec has no service interpolation in `routes` — `fromService`
+      # works in `envVars`, which is how DATABASE_URL and CORS_ORIGIN resolve
+      # themselves, but there is no equivalent here. So this host has to be
+      # written out, and it has to match the API service exactly.
       #
-      # It must match the API service's REAL hostname, which Render assigns at
-      # creation. It is `impactbridge-api.onrender.com` only if that subdomain
-      # was free; onrender.com subdomains are globally unique, so a taken name
-      # gets a suffix (e.g. `impactbridge-api-a7x2.onrender.com`).
+      # The `-cje5` suffix is not a typo. onrender.com subdomains are globally
+      # unique and `impactbridge-api.onrender.com` was already taken, so Render
+      # appended one at creation. The value below was confirmed live
+      # (GET /api/health -> 200) before being committed.
       #
-      # Find it at the top of the API service's page in the dashboard, then
-      # make this line match it exactly.
+      # If the API service is ever recreated it may get a different suffix, and
+      # this line must be updated to match. Getting it wrong FAILS QUIETLY in
+      # the worst way: the site loads, looks perfect, and every API call 404s —
+      # so pages render their empty states and it reads as "the database is
+      # broken" rather than as a routing typo. Verify after any change with:
       #
-      # Getting it wrong FAILS QUIETLY in the worst way: the site loads, looks
-      # perfect, and every single API call 404s — so the pages render their
-      # empty states and it reads as "the database is broken" rather than as a
-      # routing typo. Verify with:
-      #
-      #     curl -s -o /dev/null -w '%{http_code}\n' https://<web-host>/api/health
+      #     curl -s -o /dev/null -w '%{http_code}' https://<web-host>/api/health
       #
       # 200 means the rewrite is right. 404 means this line is wrong.
       - type: rewrite
         source: /api/*
-        destination: https://impactbridge-api.onrender.com/api/*
+        destination: https://impactbridge-api-cje5.onrender.com/api/*
       - type: rewrite
         source: /*
         destination: /index.html
