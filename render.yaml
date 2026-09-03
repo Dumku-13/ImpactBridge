@@ -140,6 +140,23 @@ services:
     runtime: static
     buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @impactbridge/web build
     staticPublishPath: ./apps/web/dist
+    envVars:
+      # ⚠️  LOAD-BEARING. Without this the static build fails on Render. ⚠️
+      #
+      # `packageManager` pins pnpm 11.20.0, and pnpm 11 requires the `node:sqlite`
+      # built-in, which only exists from Node 22. The API never hit this because
+      # its Dockerfile pins `node:24-alpine`, and CI never hit it because the
+      # workflow pins Node 24 — this static site was the one place left running
+      # on whatever Node the platform defaults to, which is older. pnpm then
+      # crashed before Vite was ever invoked:
+      #
+      #   Error [ERR_UNKNOWN_BUILTIN_MODULE]: No such built-in module: node:sqlite
+      #       at …/pnpm/11.20.0/dist/pnpm.mjs
+      #
+      # Reproduced on Node 18 and 20 (both fail) and 22 and 24 (both pass).
+      # 24 to match the API's runtime, so both services run the same major.
+      - key: NODE_VERSION
+        value: "24"
     # SPA: every unknown path is a client route, not a 404 — but /api must be
     # proxied FIRST or the rewrite below would swallow it.
     routes:

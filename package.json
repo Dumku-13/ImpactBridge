@@ -5,7 +5,7 @@
   "description": "ImpactBridge — grant & nonprofit funding management platform",
   "packageManager": "pnpm@11.20.0",
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "scripts": {
     "dev": "pnpm -r --parallel dev",

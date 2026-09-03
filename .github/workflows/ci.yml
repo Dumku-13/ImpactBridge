@@ -31,7 +31,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '24' # LTS baseline; engines allows >=20, local dev uses 24
+          node-version: '24' # pnpm 11 needs node:sqlite (Node 22+); engines requires >=22
           cache: pnpm
 
       - name: Install dependencies
