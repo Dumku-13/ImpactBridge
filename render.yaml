@@ -229,9 +229,17 @@ services:
       # guessed. `font-src data:` in particular is not optional: Fontsource
       # inlines small font subsets as data: URIs inside its CSS, and without it
       # the display face silently fails to load.
+      # `images.unsplash.com` is in img-src because the seeded organisation
+      # cover images are hosted there — every one of the 8 demo orgs stores an
+      # unsplash URL in `coverUrl`. Without it the CSP blocked all of them and
+      # the site rendered broken-image icons on the browse grid, the story
+      # cards and the donation history, which reads as missing data rather than
+      # as a blocked request. `img-src` is the safe directive to widen: an
+      # image cannot execute. Replacing that seed data with the committed
+      # same-origin media under /media would let this be removed again.
       - path: /*
         name: Content-Security-Policy
-        value: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'sha256-n42NM3voYxt7Vym+bFHxtD+BAS4N4XkB16ABVesRAaw=' https://checkout.razorpay.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://res.cloudinary.com https://*.razorpay.com; font-src 'self' data:; connect-src 'self' https://*.razorpay.com; frame-src https://api.razorpay.com https://checkout.razorpay.com; worker-src 'self' blob:"
+        value: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'sha256-n42NM3voYxt7Vym+bFHxtD+BAS4N4XkB16ABVesRAaw=' https://checkout.razorpay.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://res.cloudinary.com https://images.unsplash.com https://*.razorpay.com; font-src 'self' data:; connect-src 'self' https://*.razorpay.com; frame-src https://api.razorpay.com https://checkout.razorpay.com; worker-src 'self' blob:"
 
       # `style-src 'unsafe-inline'` above is deliberate and unavoidable: React
       # renders `style={{...}}` props as inline style attributes and GSAP writes
