@@ -1,6 +1,51 @@
 import "dotenv/config";
 import { z } from "zod";
 
+/** Does this string already carry a scheme (`https://`, `postgres://`, …)? */
+const HAS_SCHEME = /^[a-z][a-z0-9+.-]*:\/\//i;
+
+/**
+ * Turn a bare hostname into a URL, and leave a real URL alone.
+ *
+ * ── Why this exists: it is what broke the first Render deploy ───────────────
+ *
+ * `render.yaml` populates WEB_APP_URL and API_PUBLIC_URL with
+ *
+ *     fromService: { name: …, property: host }
+ *
+ * and Render's `host` property yields a BARE HOSTNAME — `impactbridge-web…`,
+ * with no scheme. There is no `fromService` property anywhere in the Blueprint
+ * spec that returns a full URL, so this is the only shape the platform can
+ * hand us.
+ *
+ * `z.string().url()` rejects a bare hostname outright ("Invalid url"). Because
+ * this whole schema is validated at import time and a failure calls
+ * `process.exit(1)`, the container died during startup — before it could bind
+ * a port or answer a health check. Render reported that as a failed deploy,
+ * which reads like a build problem and is actually a one-line env mismatch.
+ *
+ * Normalising here rather than in the Blueprint is deliberate: it keeps the
+ * config declarative, and it works no matter what hostname Render assigns —
+ * which the Blueprint cannot know in advance.
+ *
+ * `localhost` and loopback keep `http`, because nothing serves TLS there and
+ * silently rewriting a developer's URL to https would be its own puzzle.
+ */
+function urlWithScheme(fallback: string) {
+  return z.preprocess((raw) => {
+    const value =
+      typeof raw === "string" && raw.trim() !== "" ? raw.trim() : fallback;
+
+    if (HAS_SCHEME.test(value)) return value;
+
+    const scheme = /^(localhost|127\.0\.0\.1|\[::1\])(:|$)/i.test(value)
+      ? "http"
+      : "https";
+
+    return `${scheme}://${value}`;
+  }, z.string().url());
+}
+
 /**
  * Validate environment variables ONCE at boot.
  *
@@ -24,11 +69,11 @@ const envSchema = z.object({
   JWT_REFRESH_SECRET: z
     .string()
     .min(32, "JWT_REFRESH_SECRET must be at least 32 characters"),
-  WEB_APP_URL: z.string().url().default("http://localhost:5173"),
+  WEB_APP_URL: urlWithScheme("http://localhost:5173"),
 
   /** This API's own externally-reachable base URL, used to build gateway
    *  redirect targets (the mock checkout page lives here, not on the web app). */
-  API_PUBLIC_URL: z.string().url().default("http://localhost:4000"),
+  API_PUBLIC_URL: urlWithScheme("http://localhost:4000"),
 
   /*
    * Payments.
@@ -109,8 +154,27 @@ if (!parsed.success) {
 
 export const env = parsed.data;
 
-/** Origins allowed to call this API from a browser. */
-export const corsOrigins = env.CORS_ORIGIN.split(",").map((o) => o.trim());
+/**
+ * Origins allowed to call this API from a browser.
+ *
+ * Each entry is normalised the same way as WEB_APP_URL above, and for the same
+ * reason: CORS_ORIGIN is also fed from `fromService … property: host`, so it
+ * arrives as a bare hostname. It is not validated as a URL (it is a
+ * comma-separated LIST), so unlike the other two it never crashed the boot —
+ * it failed silently instead, which is worse. A browser's `Origin` header is
+ * always a full origin, so a bare hostname can never match one, and every
+ * cross-origin request would have been refused with no obvious cause.
+ */
+export const corsOrigins = env.CORS_ORIGIN.split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean)
+  .map((origin) => {
+    if (HAS_SCHEME.test(origin)) return origin;
+    const scheme = /^(localhost|127\.0\.0\.1|\[::1\])(:|$)/i.test(origin)
+      ? "http"
+      : "https";
+    return `${scheme}://${origin}`;
+  });
 
 export const isProduction = env.NODE_ENV === "production";
 
