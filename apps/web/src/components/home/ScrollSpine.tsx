@@ -33,9 +33,18 @@ import { useEffect, useRef } from "react";
  *    transform written straight to the node and the label is a `textContent`
  *    assignment, both inside one rAF-throttled handler.
  *
- * 3. Decorative, so `aria-hidden`: every section it names has a real heading in
- *    the document already. Also `pointer-events-none` — a progress indicator
- *    that eats clicks along the edge of the viewport is a trap.
+ * 3. Inert everywhere except the marks. The rail began fully decorative —
+ *    `aria-hidden`, `pointer-events-none` — on the reasoning that a progress
+ *    indicator which eats clicks along the edge of the viewport is a trap.
+ *    That reasoning still holds and still applies to the track, the fill and
+ *    the label, all of which remain hidden and unclickable.
+ *
+ *    The seven marks are now the exception: they are anchors to the sections
+ *    they mark, and they re-enable pointer events on themselves alone. So the
+ *    strip is not a click-swallowing edge — it is inert except at seven points
+ *    that say what they are before you press them. The label doing double duty
+ *    as a hover readout is what makes that honest; without it you would be
+ *    aiming at an anonymous dash.
  */
 export function ScrollSpine({
   sections,
@@ -62,6 +71,19 @@ export function ScrollSpine({
     let frame = 0;
     let shown = "";
     let lastActive: (typeof marks)[number] | undefined;
+
+    /*
+     * Every write to the label goes through here, from the scroll handler and
+     * from the pointer handlers alike, so the two can never fight over it. The
+     * guard is the original one: assigning textContent restarts the label's
+     * CSS transition, so an identical write is a visible flicker, not a no-op.
+     */
+    let hovered: string | null = null;
+    const paintLabel = (text: string) => {
+      if (text === shown) return;
+      shown = text;
+      label.textContent = text;
+    };
 
     /*
      * ── Geometry is measured, not re-read every frame ──────────────────────
@@ -143,12 +165,9 @@ export function ScrollSpine({
           mark.node.dataset.active = String(mark === active);
         }
 
-        // Guarded for the same reason: assigning textContent restarts the
-        // label's CSS transition.
-        if (active && active.label !== shown) {
-          shown = active.label;
-          label.textContent = active.label;
-        }
+        // While a tick is hovered or focused it owns the label; the section
+        // you are POINTING AT is more useful than the one you are scrolled to.
+        if (active && !hovered) paintLabel(active.label);
       }
     };
 
@@ -162,6 +181,136 @@ export function ScrollSpine({
       onScroll();
     };
 
+    /*
+     * Pointing at a tick names it.
+     *
+     * The ticks are 8px hairlines. Without this you would be aiming at an
+     * unlabelled dash and hoping — which is the whole reason a jump control
+     * made of marks needs to say what each mark is before you commit to it.
+     *
+     * Delegated to the list and written through `paintLabel`, so hovering the
+     * rail costs one textContent assignment and never a React render. `focusin`
+     * shares the path so tabbing through reads exactly like pointing.
+     */
+    const onPoint = (event: Event) => {
+      const link = (event.target as HTMLElement | null)?.closest<HTMLElement>(
+        "[data-spine-link]",
+      );
+      if (!link) return;
+      hovered = link.dataset.spineLabel ?? null;
+      if (hovered) paintLabel(hovered);
+    };
+
+    const onUnpoint = () => {
+      hovered = null;
+      if (lastActive) paintLabel(lastActive.label);
+    };
+
+    /*
+     * Glide to the section rather than teleport.
+     *
+     * The CSS route is definitively out: ScrollTrigger writes
+     * `scroll-behavior: auto` INLINE on the documentElement on purpose — a
+     * smooth scroller breaks the scroll maths driving the hero — and an inline
+     * style beats any rule we could author. That was read off the live element,
+     * so it is fact rather than inference.
+     *
+     * An explicit `behavior: "smooth"` in the options object should outrank the
+     * CSS property per spec, and might well work. It is not used here because
+     * it could not be confirmed: the only browser available to check it runs
+     * with `visibilityState: "hidden"`, where the engine pauses smooth-scroll
+     * animations and rAF alike, so every attempt measured as "did not move" —
+     * a result that says nothing about a real, visible page. Shipping a
+     * behaviour on evidence that weak is how a page ends up broken in the one
+     * environment nobody tested.
+     *
+     * So the position is written directly, which is the one path measured to
+     * work here regardless of visibility. The tween is also interruptible,
+     * which the native version would not have been: touch the wheel, the
+     * trackpad, or an arrow key and the glide stops where it is rather than
+     * hauling you to a destination you have changed your mind about.
+     */
+    let scrollFrame = 0;
+
+    const stopGlide = () => {
+      if (scrollFrame) cancelAnimationFrame(scrollFrame);
+      scrollFrame = 0;
+      window.removeEventListener("wheel", stopGlide);
+      window.removeEventListener("touchstart", stopGlide);
+      window.removeEventListener("keydown", stopGlide);
+    };
+
+    const glideTo = (top: number) => {
+      stopGlide();
+      const from = window.scrollY;
+      const delta = top - from;
+      if (!delta) return;
+
+      /*
+       * Distance-aware, then clamped. A jump to the next chapter should not
+       * take as long as a jump to the last one, but seven screens still has to
+       * arrive promptly — past about 700ms a traversal stops reading as a move
+       * and starts reading as a wait.
+       */
+      const duration = Math.min(700, Math.max(300, Math.abs(delta) * 0.22));
+      const startedAt = performance.now();
+      // ease-out cubic: leaves immediately, settles gently. Never ease-in —
+      // the delay lands exactly where the eye is looking.
+      const ease = (t: number) => 1 - (1 - t) ** 3;
+
+      const step = (now: number) => {
+        const t = Math.min(1, (now - startedAt) / duration);
+        window.scrollTo(0, Math.round(from + delta * ease(t)));
+        if (t < 1) {
+          scrollFrame = requestAnimationFrame(step);
+        } else {
+          stopGlide();
+        }
+      };
+
+      window.addEventListener("wheel", stopGlide, { passive: true });
+      window.addEventListener("touchstart", stopGlide, { passive: true });
+      window.addEventListener("keydown", stopGlide);
+      scrollFrame = requestAnimationFrame(step);
+    };
+
+    const onActivate = (event: MouseEvent) => {
+      // Let the browser keep modified clicks: new tab, new window, download.
+      if (event.defaultPrevented || event.button !== 0) return;
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+
+      const link = (event.target as HTMLElement | null)?.closest<HTMLAnchorElement>(
+        "[data-spine-link]",
+      );
+      if (!link) return;
+
+      const id = link.getAttribute("href")?.slice(1);
+      const target = id && document.getElementById(id);
+      if (!target) return; // fall through to the native jump
+
+      event.preventDefault();
+      const top = target.getBoundingClientRect().top + window.scrollY;
+
+      /*
+       * Reduced motion gets the instant landing. Travelling seven screens under
+       * someone who asked for less movement is precisely what that setting is
+       * about.
+       */
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        window.scrollTo(0, Math.round(top));
+      } else {
+        glideTo(top);
+      }
+
+      /*
+       * `replaceState`, not `pushState`: the section belongs in the URL so it
+       * can be shared, but seven history entries from idly reading the rail
+       * would turn Back into a scroll-position undo instead of a way out of
+       * the page.
+       */
+      history.replaceState(null, "", `#${id}`);
+    };
+
     measure();
     update();
 
@@ -172,10 +321,23 @@ export function ScrollSpine({
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onResize, { passive: true });
 
+    const list = root.querySelector<HTMLElement>("[data-spine-list]");
+    list?.addEventListener("pointerover", onPoint);
+    list?.addEventListener("pointerout", onUnpoint);
+    list?.addEventListener("focusin", onPoint);
+    list?.addEventListener("focusout", onUnpoint);
+    list?.addEventListener("click", onActivate as EventListener);
+
     return () => {
       if (frame) cancelAnimationFrame(frame);
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onResize);
+      list?.removeEventListener("pointerover", onPoint);
+      list?.removeEventListener("pointerout", onUnpoint);
+      list?.removeEventListener("focusin", onPoint);
+      list?.removeEventListener("focusout", onUnpoint);
+      list?.removeEventListener("click", onActivate as EventListener);
+      stopGlide();
       observer.disconnect();
     };
   }, [sections]);
@@ -183,7 +345,6 @@ export function ScrollSpine({
   return (
     <div
       ref={rootRef}
-      aria-hidden="true"
       /*
        * Two modes, because the room available is not a matter of taste.
        *
@@ -206,8 +367,8 @@ export function ScrollSpine({
       className="pointer-events-none fixed left-3 top-1/2 z-40 hidden -translate-y-1/2 mix-blend-difference md:block min-[1360px]:left-5"
     >
       <div className="relative flex h-[46svh] items-stretch gap-2.5">
-        {/* Track, then the fill scaling from the top. */}
-        <div className="relative w-px bg-[hsl(40_24%_96%/0.28)]">
+        {/* Track, then the fill scaling from the top. Progress, not content. */}
+        <div aria-hidden="true" className="relative w-px bg-[hsl(40_24%_96%/0.28)]">
           <div
             ref={fillRef}
             /* Own layer: the scaleY is written every scroll frame, so keeping
@@ -216,23 +377,65 @@ export function ScrollSpine({
           />
         </div>
 
-        {/* One tick per section — the whole outline, at a glance. Only where
-            there is gutter to hold it; see the note on the root element. */}
-        <ol className="hidden flex-col justify-between py-1 min-[1360px]:flex">
-          {sections.map((section) => (
-            <li
-              key={section.id}
-              data-spine-mark={section.id}
-              data-active="false"
-              className="group flex h-2 items-center"
-            >
-              {/* `group-data-` reads the state off the <li>, which is where the
-                  handler writes it — a `data-[active]` variant here would look
-                  at the span's own attribute and never match. */}
-              <span className="h-px w-2 bg-[hsl(40_24%_96%/0.35)] transition-all duration-300 group-data-[active=true]:w-4 group-data-[active=true]:bg-[hsl(40_24%_96%)]" />
-            </li>
-          ))}
-        </ol>
+        {/*
+          One tick per section — the whole outline at a glance, and the way to
+          jump to any of it.
+
+          `pointer-events-auto` is re-enabled HERE and nowhere else. The root
+          stays `pointer-events-none`, so the rail, the track and the label are
+          still inert and the edge of the viewport does not become a strip that
+          swallows clicks — which is the trap the note at the top of this file
+          warns about. Only the seven marks are targets.
+
+          Plain `<a href="#id">` rather than a click handler: it works from the
+          keyboard for free, offers "open in new tab", puts the section in the
+          URL so it can be shared, and needs no JavaScript to do its job.
+        */}
+        <nav
+          aria-label="Jump to a section"
+          data-spine-list
+          className="pointer-events-auto hidden min-[1360px]:flex"
+        >
+          <ol className="flex flex-1 flex-col justify-between py-1">
+            {sections.map((section) => (
+              <li
+                key={section.id}
+                data-spine-mark={section.id}
+                data-active="false"
+                className="group flex h-2 items-center"
+              >
+                <a
+                  href={`#${section.id}`}
+                  data-spine-link
+                  data-spine-label={section.label}
+                  /*
+                   * The mark stays an 8px hairline; `::before` gives it a 44px
+                   * target so it can be hit without being seen. Seven sections
+                   * across 46svh sit about 60px apart, so the targets clear
+                   * each other.
+                   *
+                   * No focus ring: this sits inside `mix-blend-difference`,
+                   * which would invert one into whatever is behind it. The
+                   * focused state is carried by the mark itself instead —
+                   * double the width and triple the brightness, plus its name
+                   * appearing on the rail, which is a louder indicator than a
+                   * ring would have been.
+                   */
+                  className="relative flex h-2 items-center before:absolute before:left-1/2 before:top-1/2 before:h-11 before:w-8 before:-translate-x-1/2 before:-translate-y-1/2 before:content-[''] focus-visible:outline-none"
+                >
+                  <span className="sr-only">{section.label}</span>
+                  {/* `group-data-` reads the state off the <li>, which is where
+                      the handler writes it — a `data-[active]` variant here
+                      would look at this span's own attribute and never match. */}
+                  <span
+                    aria-hidden="true"
+                    className="h-px w-2 bg-[hsl(40_24%_96%/0.35)] transition-all duration-300 group-hover:w-4 group-hover:bg-[hsl(40_24%_96%)] group-focus-within:w-4 group-focus-within:bg-[hsl(40_24%_96%)] group-data-[active=true]:w-4 group-data-[active=true]:bg-[hsl(40_24%_96%)]"
+                  />
+                </a>
+              </li>
+            ))}
+          </ol>
+        </nav>
 
         {/*
           The name of the section you are in, set vertically so the component
@@ -241,6 +444,7 @@ export function ScrollSpine({
         */}
         <span
           ref={labelRef}
+          aria-hidden="true"
           className="hidden self-center text-[11px] font-semibold uppercase tracking-[0.18em] text-[hsl(40_24%_96%/0.85)] transition-opacity duration-300 min-[1360px]:block"
           style={{ writingMode: "vertical-rl", textOrientation: "mixed" }}
         />
