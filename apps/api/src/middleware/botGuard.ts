@@ -43,8 +43,21 @@ import { HttpError } from "./errorHandler.js";
  * login in well under two seconds, and rejecting them would be far worse than
  * letting a slow bot through — so this only catches submissions that are
  * physically impossible, not merely quick.
+ *
+ * This was 1200ms, which did not honour the paragraph above it. A password
+ * manager fills both fields the instant the form mounts, and a returning user
+ * pressing Enter lands somewhere around 700-900ms — inside the window. The
+ * failure mode is the worst one available here: correct credentials rejected
+ * with a message that reads like a validation error, intermittently, only for
+ * the users who move fastest, and never reproducibly for whoever is debugging
+ * it. That is a login that "sometimes doesn't work" with nothing in the logs
+ * to explain why.
+ *
+ * 400ms is the floor a human cannot beat: it still takes a real pointer or a
+ * keystroke to reach the submit control after paint. Scripted submissions post
+ * within a few milliseconds of mount and are still caught.
  */
-const MIN_FILL_MS = 1200;
+const MIN_FILL_MS = 400;
 
 /**
  * One message for every rejection, matching what a validation failure looks
