@@ -39,13 +39,13 @@ export function Premise() {
               </span>
             </h2>
 
-            <p className="mt-8 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+            <p className="mt-8 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg sm:leading-relaxed">
               It&rsquo;s the months afterwards. Applications sitting unanswered.
               Decisions nobody can retrace. Money that moves without anyone
               being able to say where it landed, or what it did when it got
               there.
             </p>
-            <p className="mt-5 max-w-xl text-base leading-relaxed text-foreground sm:text-lg">
+            <p className="mt-5 max-w-xl text-base leading-relaxed text-foreground sm:text-lg sm:leading-relaxed">
               ImpactBridge puts that entire lifecycle in one place — application
               to final report — and keeps a record of every step.
             </p>

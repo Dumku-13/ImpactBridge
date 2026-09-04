@@ -162,7 +162,7 @@ export function FundingFlow() {
                         : "scale-90 border-border bg-background text-muted-foreground",
                     )}
                   >
-                    <span className="tnum text-[10px] font-bold">
+                    <span className="tnum text-[11px] font-semibold">
                       {String(i + 1).padStart(2, "0")}
                     </span>
                   </span>
@@ -184,7 +184,7 @@ export function FundingFlow() {
                   >
                     {stage.label}
                   </h3>
-                  <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+                  <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base sm:leading-relaxed">
                     {stage.body}
                   </p>
                 </li>

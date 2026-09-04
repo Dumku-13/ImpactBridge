@@ -63,7 +63,7 @@ export function StatBand() {
           <div className="mt-10 grid grid-cols-2 gap-x-8 gap-y-10 sm:grid-cols-3 lg:grid-cols-5">
             {stats.map((stat, i) => (
               <Reveal key={stat.label} delay={i * 70}>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                   {stat.label}
                 </p>
                 <p

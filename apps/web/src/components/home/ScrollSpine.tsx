@@ -241,7 +241,7 @@ export function ScrollSpine({
         */}
         <span
           ref={labelRef}
-          className="hidden self-center text-[9px] font-semibold uppercase tracking-[0.22em] text-[hsl(40_24%_96%/0.85)] transition-opacity duration-300 min-[1360px]:block"
+          className="hidden self-center text-[11px] font-semibold uppercase tracking-[0.18em] text-[hsl(40_24%_96%/0.85)] transition-opacity duration-300 min-[1360px]:block"
           style={{ writingMode: "vertical-rl", textOrientation: "mixed" }}
         />
       </div>

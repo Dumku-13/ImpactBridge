@@ -35,7 +35,7 @@ export function ThemeToggle({ className }: { className?: string }) {
       aria-label={`Theme: ${LABELS[theme]}. Switch to ${LABELS[next]}.`}
       title={`Theme: ${LABELS[theme]}`}
       className={cn(
-        "inline-flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-all duration-200 ease-out-soft hover:bg-secondary hover:text-foreground active:scale-90",
+        "relative inline-flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-all duration-200 ease-out-soft before:absolute before:left-1/2 before:top-1/2 before:h-11 before:w-11 before:-translate-x-1/2 before:-translate-y-1/2 before:content-[''] hover:bg-secondary hover:text-foreground active:scale-90",
         className,
       )}
     >

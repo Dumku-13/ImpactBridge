@@ -285,7 +285,7 @@ export function Opening() {
               <span className="min-w-0 flex-1 truncate text-xs text-[hsl(var(--paper)/0.8)]">
                 {organization.name}
               </span>
-              <span className="shrink-0 text-[10px] uppercase tracking-[0.12em] text-[hsl(var(--paper)/0.4)]">
+              <span className="shrink-0 text-[11px] uppercase tracking-[0.18em] text-[hsl(var(--paper)/0.4)]">
                 {organization.city ?? "—"}
               </span>
             </li>
@@ -399,11 +399,11 @@ export function Opening() {
       <div className="relative z-10">
         {/* Screen one is deliberately almost empty: the headline gets the
             opening to itself before anything travels across it. */}
-        <section className="flex h-svh flex-col justify-between px-6 py-10">
-          <p className="op-chrome mx-auto w-full max-w-[110rem] text-[10px] font-semibold uppercase tracking-[0.24em] text-[hsl(var(--paper)/0.55)]">
+        <section className="flex h-svh flex-col justify-between px-6 pb-10 pt-24">
+          <p className="op-chrome mx-auto w-full max-w-[110rem] text-[11px] font-semibold uppercase tracking-[0.18em] text-[hsl(var(--paper)/0.55)]">
             Verified nonprofits · transparent grants
           </p>
-          <p className="op-chrome mx-auto inline-flex w-full max-w-[110rem] items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[hsl(var(--paper)/0.45)]">
+          <p className="op-chrome mx-auto inline-flex w-full max-w-[110rem] items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[hsl(var(--paper)/0.55)]">
             <ArrowDown className="h-3 w-3" />
             Keep scrolling
           </p>
@@ -422,7 +422,7 @@ export function Opening() {
             <div className="mx-auto grid w-full max-w-[110rem] items-center gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-20">
               {/* ── The figure ─────────────────────────────────────────── */}
               <div className="border-l-2 border-primary pl-6 sm:pl-8">
-                <p className="tnum text-[10px] font-semibold uppercase tracking-[0.24em] text-[hsl(var(--paper)/0.45)]">
+                <p className="tnum text-[11px] font-semibold uppercase tracking-[0.18em] text-[hsl(var(--paper)/0.55)]">
                   {String(index + 1).padStart(2, "0")} / 03
                 </p>
                 <p
@@ -469,9 +469,9 @@ export function Opening() {
                 which costs nothing to paint.
               */}
               <div className="rounded-sm border border-[hsl(var(--paper)/0.14)] bg-[hsl(var(--ink)/0.62)] p-6 sm:p-8">
-                <p className="mb-6 flex items-baseline justify-between gap-4 border-b border-[hsl(var(--paper)/0.14)] pb-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-[hsl(var(--paper)/0.5)]">
+                <p className="mb-6 flex items-baseline justify-between gap-4 border-b border-[hsl(var(--paper)/0.14)] pb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-[hsl(var(--paper)/0.5)]">
                   {figure.panelTitle}
-                  <span className="text-[hsl(var(--paper)/0.3)]">Live</span>
+                  <span className="text-[hsl(var(--paper)/0.55)]">Live</span>
                 </p>
 
                 {/*
@@ -485,7 +485,7 @@ export function Opening() {
                 {figure.rows > 0 ? (
                   figure.panel
                 ) : (
-                  <p className="text-sm leading-relaxed text-[hsl(var(--paper)/0.45)]">
+                  <p className="text-sm leading-relaxed text-[hsl(var(--paper)/0.55)]">
                     {figure.emptyLine}
                   </p>
                 )}
@@ -494,7 +494,7 @@ export function Opening() {
           </section>
         ))}
 
-        <section className="flex min-h-[60svh] items-center px-6 pb-20">
+        <section className="flex items-center px-6 pb-24 pt-12">
           <div className="mx-auto w-full max-w-[110rem]">
             <div className="flex flex-wrap items-center gap-4 border-t border-[hsl(var(--paper)/0.15)] pt-10">
               <Link

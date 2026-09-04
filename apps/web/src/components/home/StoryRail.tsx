@@ -165,11 +165,11 @@ function StoryCard({
         </span>
       </div>
 
-      <p className="mt-10 text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">
+      <p className="mt-10 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
         {copy.category}
       </p>
       <p
-        className="mt-3 font-display text-xl leading-snug text-[hsl(var(--paper))] sm:text-2xl"
+        className="mt-3 font-display text-xl leading-snug text-[hsl(var(--paper))] sm:text-2xl sm:leading-snug"
         style={{ fontVariationSettings: '"SOFT" 12' }}
       >
         {copy.caption}
@@ -248,7 +248,7 @@ export function StoryRail() {
     >
       {/* Above the page thread (z-5), which passes behind this column. */}
       <div className="relative z-10 mx-auto max-w-7xl px-6">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[hsl(var(--paper)/0.55)]">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[hsl(var(--paper)/0.55)]">
           The work itself
         </p>
 
@@ -275,7 +275,7 @@ export function StoryRail() {
             Six kinds of work this platform funds, held at the scale the
             photographs actually support — small, sharp, and side by side.
           </p>
-          <p className="inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[hsl(var(--paper)/0.5)]">
+          <p className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[hsl(var(--paper)/0.5)]">
             <MoveHorizontal className="h-3.5 w-3.5" />
             Scroll, or drag the rail
           </p>
@@ -333,7 +333,7 @@ export function StoryRail() {
               <br />
               <span className="text-primary">work.</span>
             </span>
-            <span className="inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[hsl(var(--paper)/0.6)]">
+            <span className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[hsl(var(--paper)/0.6)]">
               Browse organisations
               <ArrowRight className="h-3.5 w-3.5 text-accent transition-transform duration-200 ease-out-soft group-hover:translate-x-1" />
             </span>

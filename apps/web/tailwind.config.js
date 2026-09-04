@@ -1,5 +1,12 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  /*
+   * Tailwind emits `hover:` styles inside `@media (hover: hover)` with this on.
+   * Without it a tap on a phone leaves the card or button stuck in its hover
+   * state until you tap somewhere else — the single most common tell that a
+   * site was designed on a desktop and never held in a hand.
+   */
+  future: { hoverOnlyWhenSupported: true },
   darkMode: ["class"],
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
   theme: {

@@ -521,6 +521,21 @@
 }
 
 /*
+ * Honour the OS "reduce transparency" setting. Translucency is a material, and
+ * a material is exactly what some people need removed: over a busy page a
+ * blurred surface costs legibility, and the setting exists to say so. Apple's
+ * guidance is to make the surface frostier and solid rather than to delete the
+ * layer, so the chrome keeps its shape and only stops showing what is behind.
+ */
+@media (prefers-reduced-transparency: reduce) {
+  .app-chrome {
+    background-color: hsl(var(--background)) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
+
+/*
  * Honour the OS "reduce motion" setting. Vestibular disorders make sliding and
  * scaling genuinely unpleasant, so everything collapses to an instant state
  * change — the interface still works, it just stops moving.
@@ -531,8 +546,24 @@
   *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+
+    /*
+     * Not a blanket `transition-duration: 0`. Reduced motion means gentler
+     * motion, not none: a colour or opacity change carries meaning — this
+     * button is pressed, this row is selected, this panel is now the active
+     * one — and deleting it deletes the feedback along with the movement.
+     *
+     * So the transition LIST is narrowed to the properties that do not travel.
+     * Anything transform-based is simply absent from it and therefore lands in
+     * its final position instantly, with no journey to watch. Note this does
+     * not touch transform VALUES: half the layout is centred with
+     * `-translate-x-1/2`, so zeroing the property itself would move the page
+     * rather than steady it.
+     */
+    transition-property: opacity, color, background-color, border-color,
+      box-shadow, fill, stroke !important;
+    transition-duration: 150ms !important;
   }
 }
 

@@ -61,7 +61,7 @@ export function SiteFooter() {
           </div>
 
           <div>
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-foreground">
+            <h2 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground">
               Discover
             </h2>
             <ul className="mt-4 space-y-2.5">
@@ -71,7 +71,7 @@ export function SiteFooter() {
           </div>
 
           <div>
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-foreground">
+            <h2 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground">
               Account
             </h2>
             <ul className="mt-4 space-y-2.5">
@@ -87,7 +87,7 @@ export function SiteFooter() {
             deliberately the most prominent thing in this row: someone about to
             enter card details is entitled to know before, not after.
           */}
-          <p className="max-w-xl text-sm text-muted-foreground">
+          <p className="max-w-xl text-sm leading-relaxed text-muted-foreground">
             ImpactBridge is a demonstration platform. Payments run in test mode;
             no real money is processed.
           </p>

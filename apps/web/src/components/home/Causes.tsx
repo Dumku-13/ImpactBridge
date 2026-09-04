@@ -124,7 +124,7 @@ function CausePanel({
         >
           <span
             className={cn(
-              "font-grotesk font-bold text-primary",
+              "font-grotesk font-extrabold text-primary",
               size === "lg" ? "text-sm" : "text-[11px]",
             )}
           >
@@ -144,8 +144,8 @@ function CausePanel({
           className={cn(
             "text-muted-foreground",
             size === "lg"
-              ? "mt-2 max-w-sm text-base leading-relaxed sm:text-lg"
-              : "mt-1.5 text-sm leading-snug",
+              ? "mt-2 max-w-sm text-base leading-relaxed sm:text-lg sm:leading-relaxed"
+              : "mt-1.5 text-sm leading-relaxed",
           )}
           style={{ maxWidth: cause.asset.maxWidth }}
         >
@@ -186,7 +186,7 @@ export function Causes() {
           </Reveal>
 
           <Reveal delay={160}>
-            <p className="mt-8 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+            <p className="mt-8 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg sm:leading-relaxed">
               Every organisation on ImpactBridge works under one of six
               causes. Some need a single grant to finish a project; others
               run on many small gifts, given steadily.

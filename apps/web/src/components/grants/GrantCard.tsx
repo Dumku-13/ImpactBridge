@@ -69,7 +69,7 @@ export function GrantCard({ grant }: { grant: GrantCardType }) {
       ref={rowRef}
       to={`/grants/${grant.slug}`}
       onMouseMove={trackPointer}
-      className="group relative block overflow-hidden border-t border-border transition-colors duration-500"
+      className="group relative block overflow-hidden border-t border-border transition-colors duration-300"
     >
       {/*
         The cause photograph, revealed on hover behind the row. It sits at zero
@@ -79,7 +79,7 @@ export function GrantCard({ grant }: { grant: GrantCardType }) {
       {image && (
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 ease-out-soft group-hover:opacity-100"
+          className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 ease-out-soft group-hover:opacity-100"
         >
           <img
             src={image.src}
@@ -93,9 +93,9 @@ export function GrantCard({ grant }: { grant: GrantCardType }) {
         </div>
       )}
 
-      <div className="relative flex flex-col gap-5 px-1 py-8 transition-colors duration-500 group-hover:text-[hsl(var(--background))] sm:px-2 lg:flex-row lg:items-baseline lg:gap-10">
+      <div className="relative flex flex-col gap-5 px-1 py-8 transition-colors duration-300 group-hover:text-[hsl(var(--background))] sm:px-2 lg:flex-row lg:items-baseline lg:gap-10">
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground transition-colors duration-500 group-hover:text-[hsl(var(--background)/0.7)]">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground transition-colors duration-300 group-hover:text-[hsl(var(--background)/0.7)]">
             {grant.categories.slice(0, 2).map((category) => (
               <span key={category.id}>{category.name}</span>
             ))}
@@ -108,17 +108,17 @@ export function GrantCard({ grant }: { grant: GrantCardType }) {
             row, and the metadata arranges itself around it.
           */}
           <h3
-            className="mt-3 font-grotesk text-3xl font-extrabold uppercase leading-[0.92] tracking-[-0.03em] text-foreground transition-colors duration-500 group-hover:text-[hsl(var(--background))] sm:text-5xl"
+            className="mt-3 font-grotesk text-3xl font-extrabold uppercase leading-[0.92] tracking-[-0.03em] text-foreground transition-colors duration-300 group-hover:text-[hsl(var(--background))] sm:text-5xl"
             style={{ fontStretch: "84%" }}
           >
             {grant.title}
           </h3>
 
-          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground transition-colors duration-500 group-hover:text-[hsl(var(--background)/0.75)]">
+          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground transition-colors duration-300 group-hover:text-[hsl(var(--background)/0.75)]">
             {grant.summary}
           </p>
 
-          <p className="mt-3 text-xs text-muted-foreground transition-colors duration-500 group-hover:text-[hsl(var(--background)/0.65)]">
+          <p className="mt-3 text-xs text-muted-foreground transition-colors duration-300 group-hover:text-[hsl(var(--background)/0.65)]">
             {grant.funder.name}
             <span className="mx-2 opacity-40">/</span>
             {grant.applicationCount}{" "}
@@ -136,7 +136,7 @@ export function GrantCard({ grant }: { grant: GrantCardType }) {
           </p>
           <p
             className={cn(
-              "tnum text-xs font-semibold uppercase tracking-[0.12em] transition-colors duration-500",
+              "tnum text-xs font-semibold uppercase tracking-[0.12em] transition-colors duration-300",
               deadline.closed
                 ? "text-muted-foreground/60"
                 : deadline.urgent
@@ -148,7 +148,7 @@ export function GrantCard({ grant }: { grant: GrantCardType }) {
           </p>
         </div>
 
-        <ArrowUpRight className="hidden h-6 w-6 shrink-0 text-muted-foreground transition-all duration-500 ease-out-soft group-hover:-translate-y-1 group-hover:translate-x-1 group-hover:text-primary lg:block" />
+        <ArrowUpRight className="hidden h-6 w-6 shrink-0 text-muted-foreground transition-[transform,color] duration-300 ease-out-soft group-hover:-translate-y-1 group-hover:translate-x-1 group-hover:text-primary lg:block" />
       </div>
     </Link>
   );

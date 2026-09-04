@@ -98,7 +98,7 @@ export function HomePage() {
             Impact<span className="text-accent">Bridge</span>
           </span>
 
-          <div className="ml-auto flex items-center gap-3">
+          <div className="ml-auto flex items-center gap-2 sm:gap-3">
             <ThemeToggle className="text-[hsl(40_24%_96%/0.75)] hover:bg-[hsl(40_24%_96%/0.12)] hover:text-[hsl(var(--paper))]" />
             {user ? (
               <Link
@@ -112,13 +112,13 @@ export function HomePage() {
               <>
                 <Link
                   to="/login"
-                  className="inline-flex h-10 items-center rounded-lg px-4 text-sm font-semibold text-[hsl(40_24%_96%/0.85)] transition-colors hover:bg-[hsl(40_24%_96%/0.12)] hover:text-[hsl(var(--paper))]"
+                  className="hidden h-10 items-center rounded-lg px-3 text-sm font-semibold sm:inline-flex sm:px-4 text-[hsl(40_24%_96%/0.85)] transition-colors hover:bg-[hsl(40_24%_96%/0.12)] hover:text-[hsl(var(--paper))]"
                 >
                   Sign in
                 </Link>
                 <Link
                   to="/signup"
-                  className="inline-flex h-10 items-center rounded-lg bg-[hsl(var(--paper))] px-4 text-sm font-semibold text-[hsl(var(--ink))] transition-all duration-200 ease-out-soft active:scale-[0.97]"
+                  className="inline-flex h-10 items-center rounded-lg bg-[hsl(var(--paper))] px-3 text-sm font-semibold sm:px-4 text-[hsl(var(--ink))] transition-all duration-200 ease-out-soft active:scale-[0.97]"
                 >
                   Get started
                 </Link>
@@ -171,7 +171,7 @@ export function HomePage() {
                 key={title}
                 className="group rounded-xl border border-border bg-card p-6 shadow-subtle transition-all duration-300 ease-out-soft hover:-translate-y-1 hover:border-primary/25 hover:shadow-lifted"
               >
-                <div className="mb-5 inline-flex rounded-xl bg-primary/10 p-3 ring-1 ring-inset ring-primary/15 transition-colors duration-300 group-hover:bg-primary/15">
+                <div className="mb-5 inline-flex rounded-lg bg-primary/10 p-3 ring-1 ring-inset ring-primary/15 transition-colors duration-300 group-hover:bg-primary/15">
                   <Icon className="h-5 w-5 text-primary" />
                 </div>
                 <h2 className="font-display text-xl font-semibold text-foreground">

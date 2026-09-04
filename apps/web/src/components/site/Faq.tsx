@@ -124,7 +124,7 @@ function FaqEntry({ item }: { item: FaqItem }) {
           aria-controls={panelId}
           className="flex w-full items-center justify-between gap-4 py-5 text-left transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
-          <span className="font-display text-lg font-medium tracking-tight text-foreground">
+          <span className="font-display text-lg font-semibold tracking-tight text-foreground">
             {item.question}
           </span>
           <ChevronDown
@@ -179,7 +179,7 @@ export function Faq({
       <h2 className="font-display text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
         Questions
       </h2>
-      <p className="mt-3 text-muted-foreground">
+      <p className="mt-3 leading-relaxed text-muted-foreground">
         What this platform does, and what it does not.
       </p>
 
