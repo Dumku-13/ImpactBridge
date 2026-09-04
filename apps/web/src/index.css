@@ -511,6 +511,49 @@
   }
 
   /*
+   * ── The thread answers ──────────────────────────────────────────────────
+   *
+   * The gold line already carries money down the page. Pointing at one of the
+   * organisations it was carrying money TO brightens it and drops the dark
+   * halo back, so the thread visibly acknowledges the row under the pointer
+   * instead of running past it as decoration.
+   *
+   * Opacity only, and that constraint is inherited rather than chosen: the
+   * note directly below bans filters on this element because it spans the
+   * whole page, and a glow would be the obvious way to do this. Re-pathing the
+   * curve toward a row was the other obvious way and is worse — this path is
+   * already scrubbed by scroll, and recomputing its geometry on pointer move
+   * would fight the thing that makes it work.
+   *
+   * `:has()` rather than a class toggled from JS: the rows are inside a
+   * scroll-scrubbed zone, and adding a React state change on pointer-enter to
+   * six rows there is exactly the per-frame work the rest of this file spends
+   * its time avoiding.
+   */
+  .th-line {
+    transition: opacity 350ms var(--ease-out-soft);
+  }
+
+  .th-line--bright {
+    opacity: 0.78;
+  }
+
+  body:has([data-thread-focus]:hover) .th-line--bright {
+    opacity: 1;
+  }
+
+  /* The halo recedes so the gold reads brighter by contrast, not by glow. */
+  body:has([data-thread-focus]:hover) .th-line:not(.th-line--bright) {
+    opacity: 0.35;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .th-line {
+      transition: none;
+    }
+  }
+
+  /*
    * NO filter here, deliberately.
    *
    * There was a `drop-shadow` for glow. A filter makes the browser recompute

@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useDonations, useDonorStats } from "@/api/donations";
 import { useBookmarkedOrganizations } from "@/api/organizations";
 import { ContributionTimeline } from "@/components/donor/ContributionTimeline";
+import { Discover } from "@/components/donor/Discover";
+import { GivingOverTime } from "@/components/donor/GivingOverTime";
 import { GivingOverview } from "@/components/donor/GivingOverview";
 import { ImpactStory } from "@/components/donor/ImpactStory";
 import { SavedOrganisations } from "@/components/donor/SavedOrganisations";
@@ -30,6 +32,10 @@ export function DonorDashboard() {
         page={page}
         onPageChange={setPage}
       />
+
+      <GivingOverTime />
+
+      <Discover />
 
       <SavedOrganisations bookmarks={bookmarks} />
     </div>

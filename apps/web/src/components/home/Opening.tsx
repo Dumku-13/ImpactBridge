@@ -370,6 +370,7 @@ export function Opening() {
           {topOrganizations.slice(0, 6).map((organization) => (
             <li
               key={organization.id}
+              data-thread-focus
               className="group/row opacity-100 transition-opacity duration-300 ease-out-soft group-hover/orgs:opacity-40 hover:!opacity-100"
             >
               <div className="flex items-baseline justify-between gap-4">
