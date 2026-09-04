@@ -88,7 +88,10 @@ function CausePanel({
 
   return (
     <Reveal delay={delay} className={className}>
-      <Link to={`/browse?category=${cause.slug}`} className="group block">
+      <Link
+        to={`/browse?category=${cause.slug}`}
+        className="group block opacity-100 transition-opacity duration-300 ease-out-soft group-hover/causes:opacity-45 hover:!opacity-100"
+      >
         <div
           className={cn(
             "overflow-hidden rounded-sm border border-border bg-card shadow-subtle transition-shadow duration-300 ease-out-soft group-hover:shadow-lifted",
@@ -194,7 +197,20 @@ export function Causes() {
           </Reveal>
         </div>
 
-        <div className="mt-12 flex flex-col gap-16 sm:mt-14 sm:gap-20">
+        {/*
+          ── The collage as an explorer ──────────────────────────────────────
+          `group/causes` turns the whole set into one hover scope: pointing at
+          any cause dims the other five and leaves that one at full strength,
+          so the collage becomes something you can read one cause at a time
+          instead of six competing panels.
+
+          Done with a named group rather than React state on purpose. Hover
+          state in a component re-renders the section on every pointer move
+          across six photographs; a CSS group costs nothing and cannot drop a
+          frame. `hoverOnlyWhenSupported` is on, so all of this compiles inside
+          `@media (hover: hover)` and a tap on a phone never dims anything.
+        */}
+        <div className="group/causes mt-12 flex flex-col gap-16 sm:mt-14 sm:gap-20">
           {/* Row one: education carries the large panel; healthcare and
               women's empowerment sit beside it as a small duo. */}
           <div className="flex flex-col gap-10 lg:grid lg:grid-cols-12 lg:items-end lg:gap-8">

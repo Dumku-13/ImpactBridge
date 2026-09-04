@@ -355,11 +355,24 @@ export function Opening() {
       rows: topOrganizations.length,
       emptyLine: "Fetching the organisations this was given to…",
       panel: (
-        <ul className="space-y-3.5">
+        /*
+          Pointing at one organisation recedes the other five, so a list of six
+          figures becomes one figure at a time. Its rule thickens and takes the
+          accent, which is the only moment on this panel where a bar is allowed
+          to be loud.
+
+          A named CSS group rather than component state: hover state here would
+          re-render the whole opening on every pointer move across the list, and
+          this panel sits inside a scroll-scrubbed zone that cannot afford it.
+        */
+        <ul className="group/orgs space-y-3.5">
           {topOrganizations.slice(0, 6).map((organization) => (
-            <li key={organization.id}>
+            <li
+              key={organization.id}
+              className="group/row opacity-100 transition-opacity duration-300 ease-out-soft group-hover/orgs:opacity-40 hover:!opacity-100"
+            >
               <div className="flex items-baseline justify-between gap-4">
-                <span className="truncate text-sm text-[hsl(var(--paper)/0.82)]">
+                <span className="truncate text-sm text-[hsl(var(--paper)/0.82)] transition-colors duration-300 group-hover/row:text-[hsl(var(--paper))]">
                   {organization.name}
                 </span>
                 <span className="tnum shrink-0 text-sm font-semibold text-accent">
@@ -368,9 +381,9 @@ export function Opening() {
               </div>
               {/* Proportional to the largest raiser, so the bars compare
                   against each other rather than against nothing. */}
-              <div className="mt-1.5 h-px w-full bg-[hsl(var(--paper)/0.12)]">
+              <div className="mt-1.5 h-px w-full bg-[hsl(var(--paper)/0.12)] transition-all duration-300 ease-out-soft group-hover/row:h-0.5">
                 <div
-                  className="h-full bg-[hsl(var(--paper)/0.55)]"
+                  className="h-full bg-[hsl(var(--paper)/0.55)] transition-colors duration-300 ease-out-soft group-hover/row:bg-accent"
                   style={{
                     width: `${Math.max(4, Math.round((organization.totalRaisedMinor / largestRaised) * 100))}%`,
                   }}

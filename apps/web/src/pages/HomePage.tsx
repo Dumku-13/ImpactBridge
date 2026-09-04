@@ -12,6 +12,7 @@ import { FundingFlow } from "@/components/home/FundingFlow";
 import { StoryRail } from "@/components/home/StoryRail";
 import { StatBand } from "@/components/home/StatBand";
 import { Causes } from "@/components/home/Causes";
+import { Closing } from "@/components/home/Closing";
 import { Faq } from "@/components/site/Faq";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { useScrollTriggerRefresh } from "@/lib/gsap";
@@ -198,6 +199,12 @@ export function HomePage() {
         <div id="questions" className="border-t border-border">
           <Faq />
         </div>
+
+        {/*
+          The closing statement. Inside <main> because it is the end of the
+          page's argument, not chrome.
+        */}
+        <Closing />
       </main>
 
       {/*
