@@ -5,7 +5,7 @@ import { formatMoneyCompact } from "@impactbridge/shared";
 import { usePublicStats } from "@/api/stats";
 import { useOrganizations } from "@/api/organizations";
 import { useGrants } from "@/api/grants";
-import { prefersReducedMotion } from "@/lib/gsap";
+import { gsap, prefersReducedMotion } from "@/lib/gsap";
 
 /**
  * The landing opening: one sentence at display scale that explodes in the
@@ -53,13 +53,21 @@ import { prefersReducedMotion } from "@/lib/gsap";
  * `sr-only` copy in the heading: a screen reader spelling out "F — U — N — D"
  * is how kinetic type usually fails the people least able to route around it.
  */
+/*
+ * The opening plays once per page LOAD, not once per mount. Returning to the
+ * home page from elsewhere in the app is not an arrival, and replaying the
+ * reveal every time someone navigates back would turn a first impression into
+ * a toll booth.
+ */
+let introPlayed = false;
+
 function SplitLine({ text, className }: { text: string; className?: string }) {
   const words = text.split(" ");
 
   return (
     <span className={className}>
       {words.map((word, w) => (
-        <span key={`${word}-${w}`} aria-hidden="true" className="inline-block whitespace-nowrap">
+        <span key={`${word}-${w}`} aria-hidden="true" className="op-word inline-block whitespace-nowrap">
           {[...word].map((char, c) => (
             <span key={`${char}-${c}`} className="op-char inline-block will-change-transform">
               {char}
@@ -89,6 +97,118 @@ export function Opening() {
    */
   const { data: organizations } = useOrganizations({ pageSize: 8, sort: "most-funded" });
   const { data: openGrants } = useGrants({ openOnly: true, pageSize: 4, sort: "deadline" });
+
+  /*
+   * ── The opening reveal ────────────────────────────────────────────────────
+   *
+   * Gated on the FONTS, not on a timer.
+   *
+   * The three faces here are self-hosted with `font-display: swap`, so the
+   * headline paints in a fallback and then reflows into Archivo. At
+   * `clamp(2.75rem, min(15vw, 17svh), 13rem)` and width 62% that reflow is a
+   * visible lurch on every cold load. Waiting for `document.fonts.ready` puts
+   * the reveal exactly over the top of it: the same moment stops being a
+   * glitch and becomes the entrance. An intro that covers a real event earns
+   * its time; one that invents a wait is just a spinner with better taste.
+   *
+   * The race against 800ms is the safety valve — a slow or failed font fetch
+   * must never hold the page hostage behind an animation that has not started.
+   *
+   * ── Why this moves the WORDS and not the letters ──────────────────────────
+   *
+   * `.op-char` already carries a transform, written by CSS from `--op-p` as
+   * you scroll. Animating the letters here would mean GSAP writing inline
+   * transforms over that rule and killing the scroll explosion. The word spans
+   * are a free layer above them: nested transforms compose, so a word can rise
+   * while each letter inside it keeps its own scroll-driven vector.
+   *
+   * ── Why it fades from 0.3 and not from 0 ──────────────────────────────────
+   *
+   * The house rule, and this file's own hard-won one: an animation that is
+   * created but never advances paints and HOLDS its first keyframe. At zero
+   * that is a headline which is simply gone — the failure this project has
+   * shipped twice. At 0.3 the worst case is "briefly dim". Nothing is hidden
+   * by the stylesheet either; the start state is set by the same JavaScript
+   * that clears it, so a script that never runs leaves a page that is merely
+   * un-animated rather than blank.
+   */
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    if (introPlayed || prefersReducedMotion()) return;
+
+    /*
+     * Words, not lines. A line rising as one block reads as a panel sliding;
+     * six words arriving in sequence reads as type setting itself, which is
+     * the whole point of an opening on a page whose subject is a headline.
+     */
+    const words = Array.from(root.querySelectorAll<HTMLElement>(".op-word"));
+    const chrome = Array.from(root.querySelectorAll<HTMLElement>(".op-chrome"));
+    if (words.length === 0) return;
+
+    const targets = [...words, ...chrome];
+    /*
+     * `clearProps` rather than leaving the end values inline: `.op-chrome`
+     * takes its opacity from a scroll-driven CSS rule afterwards, and an inline
+     * opacity would outrank it for the rest of the session.
+     */
+    const release = () => gsap.set(targets, { clearProps: "opacity,transform" });
+
+    gsap.set(words, { yPercent: 60, opacity: 0.3 });
+    // 0.3 here too, for the reason above — the rule is not just for the headline.
+    gsap.set(chrome, { opacity: 0.3, y: 8 });
+
+    let cancelled = false;
+    let timeline: gsap.core.Timeline | undefined;
+
+    const fontsReady = document.fonts
+      ? document.fonts.ready.then(() => undefined)
+      : Promise.resolve();
+    const ceiling = new Promise<void>((resolve) => {
+      setTimeout(resolve, 800);
+    });
+
+    void Promise.race([fontsReady, ceiling]).then(() => {
+      if (cancelled) return;
+
+      /*
+       * Claimed here rather than on the way in. Setting it at the top of the
+       * effect meant the first mount burned the flag without animating
+       * anything, so StrictMode's mount → cleanup → mount left the second pass
+       * returning early and the reveal never played at all. Worse than the dev
+       * symptom: any remount would have disabled the opening permanently.
+       * Marking it at the point the timeline is actually built ties the flag to
+       * the thing it is supposed to describe.
+       */
+      introPlayed = true;
+      timeline = gsap.timeline({ onComplete: release });
+
+      /*
+       * Words first, 70ms apart. Slower than the 0.5s the rest of the page
+       * enters at, because this type is an order of magnitude larger and the
+       * eye reads the whole line as one object — the same duration that feels
+       * composed on a card reads as a twitch at 13rem.
+       */
+      timeline
+        .to(words, {
+          yPercent: 0,
+          opacity: 1,
+          duration: 0.95,
+          ease: "power3.out",
+          stagger: 0.07,
+        })
+        // The chrome settles under the headline rather than after it: starting
+        // at 0.3s overlaps the second line, so the screen resolves as one
+        // movement instead of a queue of them.
+        .to(chrome, { opacity: 1, y: 0, duration: 0.5, ease: "power2.out", stagger: 0.08 }, 0.3);
+    });
+
+    return () => {
+      cancelled = true;
+      timeline?.kill();
+      release();
+    };
+  }, []);
 
   useEffect(() => {
     const root = rootRef.current;
@@ -375,9 +495,9 @@ export function Opening() {
               fontSize: "clamp(2.75rem, min(15vw, 17svh), 13rem)",
             }}
           >
-            <SplitLine text="Funding that" className="block" />
-            <SplitLine text="actually reaches" className="block" />
-            <SplitLine text="the ground." className="block text-accent" />
+            <SplitLine text="Funding that" className="op-line block" />
+            <SplitLine text="actually reaches" className="op-line block" />
+            <SplitLine text="the ground." className="op-line block text-accent" />
             <span className="sr-only">
               Funding that actually reaches the ground.
             </span>

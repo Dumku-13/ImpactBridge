@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { prefersReducedMotion } from "@/lib/gsap";
+import { gsap, prefersReducedMotion } from "@/lib/gsap";
 
 /**
  * One line, drawn down the entire page as you scroll.
@@ -67,6 +67,9 @@ function buildPath(unitsY: number): string {
     .join(" ");
 }
 
+/* Once per page load, for the same reason the opening reveal is. */
+let threadDrawn = false;
+
 export function PageThread({ className }: { className?: string }) {
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -103,6 +106,36 @@ export function PageThread({ className }: { className?: string }) {
 
     fit();
     root.classList.add("th-scrub");
+
+    /*
+     * The thread draws itself down on arrival, once per page load.
+     *
+     * At the top of the page the scroll term already resolves to a few percent
+     * of the path, so without this the line is simply THERE the instant the
+     * page paints — a mark that has always existed. Animating the multiplier
+     * from 0 gives it an origin: it travels down to its resting length and
+     * stops, and from then on it belongs to the scroll.
+     *
+     * Deliberately slower than the headline and started behind it. The line is
+     * the page's connective tissue, so it should arrive as the type settles
+     * rather than compete with it for the same half second.
+     */
+    if (!threadDrawn && !prefersReducedMotion()) {
+      threadDrawn = true;
+      gsap.fromTo(
+        root,
+        { "--th-draw": 0 },
+        {
+          "--th-draw": 1,
+          duration: 1.6,
+          delay: 0.35,
+          ease: "power2.out",
+          // Leave nothing inline: `--th-draw` is only ever the opening's, and
+          // the CSS default of 1 is what should own it afterwards.
+          onComplete: () => gsap.set(root, { clearProps: "--th-draw" }),
+        },
+      );
+    }
 
     let frame = 0;
 

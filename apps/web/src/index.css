@@ -479,8 +479,17 @@
     stroke-dashoffset: var(--len, 2000);
   }
 
+  /*
+   * `--th-draw` is the opening's dial, and it defaults to 1 — fully handed over
+   * to scroll. The intro animates it up from 0 so the thread draws itself down
+   * to wherever this scroll position says it should rest, and from that moment
+   * the term is inert and `--th-p` alone drives the line exactly as before.
+   * A script that never runs leaves the multiplier at 1 and nothing changes.
+   */
   .th-scrub .th-line {
-    stroke-dashoffset: calc(var(--len, 2000) * (1 - var(--th-p, 0)));
+    stroke-dashoffset: calc(
+      var(--len, 2000) * (1 - var(--th-p, 0) * var(--th-draw, 1))
+    );
   }
 
   /*
