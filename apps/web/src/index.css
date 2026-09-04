@@ -502,6 +502,71 @@
    * really doing, for the cost of one extra stroke.
    */
 
+  /*
+   * ── The funding journey scene ───────────────────────────────────────────
+   *
+   * Six stages crossed by one number. `--fj-p` runs 0 → 1 across the whole
+   * scroll region and every stage derives its own state from it, so the scene
+   * is arithmetic rather than a timeline.
+   *
+   * That choice is the reason this can be verified at all. A timeline can only
+   * be watched; a variable can be SET — `--fj-p: 0.42` in the console, then
+   * read back what each layer computed to. The preview available here runs with
+   * `visibilityState: "hidden"`, where rAF and every animation library are
+   * paused, so a timeline-based version of this scene could not have been
+   * checked before shipping. This one can.
+   *
+   * `--fj-i` is the stage's index, written once in the markup. The local term
+   * is how far the scene has travelled THROUGH that stage:
+   *
+   *     --fj-l = --fj-p * <count> - --fj-i
+   *
+   * so it passes 0 as the stage arrives and 1 as it leaves. Everything below is
+   * a clamp off that single value.
+   */
+  .fj-scrub .fj-stage {
+    /*
+     * `--fj-d` is this stage's DISTANCE from the one currently in frame:
+     *
+     *     --fj-d = --fj-p * (count - 1) - --fj-i
+     *
+     * so it is 0 exactly when the stage is centred, negative before, positive
+     * after. Dividing by count-1 rather than count is what makes the ends
+     * behave: at p=0 stage 0 sits at 0, and at p=1 the LAST stage sits at 0,
+     * so the scene neither opens nor closes on an empty frame.
+     *
+     * The first draft used `p * count - i`, and driving it by hand is how that
+     * died: adjacent stages both reached zero at the handoff, leaving a blank
+     * gap between every step, and the last stage faded out at p=1. A triangle
+     * centred on 0 has neither problem — two neighbours always sum to 1, so
+     * there is no hole and never two stages at full opacity at once.
+     */
+    --fj-d: calc(var(--fj-p, 0) * (var(--fj-n, 6) - 1) - var(--fj-i, 0));
+
+    opacity: clamp(0, min(calc(var(--fj-d) + 1), calc(1 - var(--fj-d))), 1);
+
+    /*
+     * Travel. Negative distance means "not yet arrived", so the stage sits
+     * below and rises through frame as the scene advances — one continuous
+     * move through the process rather than six things taking turns in a spot.
+     */
+    transform: translate3d(0, calc(var(--fj-d) * -6svh), 0);
+    /* Inert once past: a faded layer must not eat the live stage's clicks. */
+    pointer-events: none;
+  }
+
+  /* The media bed, on the same distance term but shallower and slower. */
+  .fj-scrub .fj-media {
+    --fj-d: calc(var(--fj-p, 0) * (var(--fj-n, 6) - 1) - var(--fj-i, 0));
+    opacity: clamp(0, min(calc(var(--fj-d) + 1), calc(1 - var(--fj-d))), 1);
+    transform: translate3d(0, 0, 0) scale(calc(1.05 - var(--fj-d) * 0.02));
+  }
+
+  /* The rail fills once across the whole scene. Horizontal, origin-left. */
+  .fj-scrub .fj-fill {
+    transform: scaleX(clamp(0, var(--fj-p, 0), 1));
+  }
+
   /* The eyebrow and the buttons belong to the headline, so they leave with it. */
   .op-scrub .op-chrome {
     opacity: calc(1 - var(--op-p, 0) * 0.85);
