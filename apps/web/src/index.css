@@ -443,6 +443,24 @@
   }
 
   /*
+   * The footage the headline uncovers.
+   *
+   * Late and capped, both deliberate. The `- 0.12` holds it back until the
+   * letters have actually started to travel, so the opening screen is still the
+   * headline alone and not a headline over a video — and the 0.45 ceiling stops
+   * it becoming the subject. It is the ground the type was standing on, not a
+   * feature.
+   *
+   * The scale runs DOWN as it appears, so the frame settles rather than pushes;
+   * a photograph growing at the same time as the letters fly outward is two
+   * things expanding at once and reads as pressure rather than reveal.
+   */
+  .op-scrub .op-reveal {
+    opacity: clamp(0, calc((var(--op-p, 0) - 0.12) * 1.5), 0.45);
+    transform: scale(calc(1.1 - var(--op-p, 0) * 0.1));
+  }
+
+  /*
    * The ground the opening sits on.
    *
    * Ink alone is a void: once the headline has exploded outward there is

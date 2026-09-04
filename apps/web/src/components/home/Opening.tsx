@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { loops, posters } from "@/content/media";
 import { Link } from "react-router-dom";
 import { ArrowDown, ArrowRight, Check } from "lucide-react";
 import { formatMoneyCompact } from "@impactbridge/shared";
@@ -487,7 +488,42 @@ export function Opening() {
         negative margin only stops it consuming a screen of the zone's height.
       */}
       <div className="op-ground sticky top-0 -mb-[100svh] flex h-svh items-center overflow-hidden">
-        <div className="w-full px-6">
+        {/*
+          ── What the headline leaves behind ─────────────────────────────────
+          The note on `.op-ground` says it plainly: once the letters have
+          exploded outward there is nothing in the middle of the screen and the
+          section reads as a loading failure. A hairline grid was the holding
+          answer. This is the real one — footage of the thing the page is about,
+          revealed by the type getting out of its way.
+
+          It fades in on the same `--op-p` that throws the letters, but late and
+          capped, so it never becomes the subject: the headline owns the opening
+          and this is the ground underneath it. Then the wash above rises over
+          it as the figure panels arrive, so it recedes exactly when something
+          else needs the screen.
+
+          Below `.op-wash` on purpose. Above it, the footage would sit over the
+          figures crossing in front and cost them the legibility the wash exists
+          to protect.
+        */}
+        <div
+          aria-hidden="true"
+          className="op-reveal pointer-events-none absolute inset-0 opacity-0 will-change-[opacity,transform] motion-reduce:hidden"
+        >
+          <video
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="none"
+            poster={posters.community}
+            className="h-full w-full object-cover"
+          >
+            <source src={loops.community} type="video/mp4" />
+          </video>
+        </div>
+
+        <div className="relative w-full px-6">
           <h1
             className="op-headline mx-auto max-w-[110rem] font-grotesk uppercase leading-[0.8] tracking-[-0.05em]"
             style={{
