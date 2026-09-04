@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { gsap, prefersReducedMotion } from "@/lib/gsap";
 
 /**
  * A line down the side of the page that fills as you scroll and marks what you
@@ -209,69 +210,43 @@ export function ScrollSpine({
     /*
      * Glide to the section rather than teleport.
      *
-     * The CSS route is definitively out: ScrollTrigger writes
-     * `scroll-behavior: auto` INLINE on the documentElement on purpose — a
-     * smooth scroller breaks the scroll maths driving the hero — and an inline
-     * style beats any rule we could author. That was read off the live element,
-     * so it is fact rather than inference.
+     * Three routes were tried before this one, and the first two are dead ends
+     * worth recording so nobody re-treads them:
      *
-     * An explicit `behavior: "smooth"` in the options object should outrank the
-     * CSS property per spec, and might well work. It is not used here because
-     * it could not be confirmed: the only browser available to check it runs
-     * with `visibilityState: "hidden"`, where the engine pauses smooth-scroll
-     * animations and rAF alike, so every attempt measured as "did not move" —
-     * a result that says nothing about a real, visible page. Shipping a
-     * behaviour on evidence that weak is how a page ends up broken in the one
-     * environment nobody tested.
+     *   1. `html { scroll-behavior: smooth }`. Never applies — ScrollTrigger
+     *      writes `scroll-behavior: auto` INLINE on the documentElement, read
+     *      off the live element, because a smooth scroller breaks the maths
+     *      driving the hero. An inline style beats any rule we can author.
      *
-     * So the position is written directly, which is the one path measured to
-     * work here regardless of visibility. The tween is also interruptible,
-     * which the native version would not have been: touch the wheel, the
-     * trackpad, or an arrow key and the glide stops where it is rather than
-     * hauling you to a destination you have changed your mind about.
+     *   2. A hand-rolled rAF tween writing `window.scrollTo` per frame. This
+     *      shipped, and it jumped instantly in the field. Two things write
+     *      scrollY on the same frames when it runs — the tween and the
+     *      ScrollTrigger scrubs — and the tween loses.
+     *
+     * So the scroll is handed to GSAP, which already owns it here. One ticker
+     * drives both the scrubs and this, so there is nothing to race.
+     * `autoKill` gives interruption for free: the tween stops the moment the
+     * visitor scrolls, instead of hauling them to a destination they have
+     * changed their mind about.
      */
-    let scrollFrame = 0;
-
-    const stopGlide = () => {
-      if (scrollFrame) cancelAnimationFrame(scrollFrame);
-      scrollFrame = 0;
-      window.removeEventListener("wheel", stopGlide);
-      window.removeEventListener("touchstart", stopGlide);
-      window.removeEventListener("keydown", stopGlide);
-    };
-
     const glideTo = (top: number) => {
-      stopGlide();
-      const from = window.scrollY;
-      const delta = top - from;
-      if (!delta) return;
-
       /*
-       * Distance-aware, then clamped. A jump to the next chapter should not
-       * take as long as a jump to the last one, but seven screens still has to
-       * arrive promptly — past about 700ms a traversal stops reading as a move
-       * and starts reading as a wait.
+       * Distance-aware, then clamped. Jumping to the next chapter should not
+       * take as long as jumping to the last one, but seven screens still has
+       * to arrive promptly — past about 0.7s a traversal stops reading as a
+       * move and starts reading as a wait.
        */
-      const duration = Math.min(700, Math.max(300, Math.abs(delta) * 0.22));
-      const startedAt = performance.now();
-      // ease-out cubic: leaves immediately, settles gently. Never ease-in —
-      // the delay lands exactly where the eye is looking.
-      const ease = (t: number) => 1 - (1 - t) ** 3;
+      const distance = Math.abs(top - window.scrollY);
+      const duration = Math.min(0.7, Math.max(0.3, distance * 0.00022));
 
-      const step = (now: number) => {
-        const t = Math.min(1, (now - startedAt) / duration);
-        window.scrollTo(0, Math.round(from + delta * ease(t)));
-        if (t < 1) {
-          scrollFrame = requestAnimationFrame(step);
-        } else {
-          stopGlide();
-        }
-      };
-
-      window.addEventListener("wheel", stopGlide, { passive: true });
-      window.addEventListener("touchstart", stopGlide, { passive: true });
-      window.addEventListener("keydown", stopGlide);
-      scrollFrame = requestAnimationFrame(step);
+      gsap.to(window, {
+        duration,
+        // ease-out: leaves immediately, settles gently. Never ease-in — the
+        // delay lands exactly where the eye is already looking.
+        ease: "power2.out",
+        overwrite: "auto",
+        scrollTo: { y: top, autoKill: true },
+      });
     };
 
     const onActivate = (event: MouseEvent) => {
@@ -292,11 +267,12 @@ export function ScrollSpine({
       const top = target.getBoundingClientRect().top + window.scrollY;
 
       /*
-       * Reduced motion gets the instant landing. Travelling seven screens under
-       * someone who asked for less movement is precisely what that setting is
-       * about.
+       * Reduced motion lands instantly. Travelling seven screens under someone
+       * who asked for less movement is precisely what that setting is about —
+       * so if the rail ever seems to "jump" for no reason, this is the branch
+       * to check before suspecting the tween.
        */
-      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      if (prefersReducedMotion()) {
         window.scrollTo(0, Math.round(top));
       } else {
         glideTo(top);
@@ -337,7 +313,7 @@ export function ScrollSpine({
       list?.removeEventListener("focusin", onPoint);
       list?.removeEventListener("focusout", onUnpoint);
       list?.removeEventListener("click", onActivate as EventListener);
-      stopGlide();
+      gsap.killTweensOf(window);
       observer.disconnect();
     };
   }, [sections]);

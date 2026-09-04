@@ -1,12 +1,19 @@
 import { useLayoutEffect } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { ScrollToPlugin } from "gsap/ScrollToPlugin";
 
 /*
  * Register once, at module scope. Registering inside a component re-runs on
  * every mount and GSAP warns about duplicate plugin registration.
+ *
+ * ScrollToPlugin is registered here because GSAP already owns scrolling on
+ * the animated pages, and anything else that moves the scroll position has
+ * to cooperate with it rather than race it. A hand-rolled scroll tween
+ * running beside ScrollTrigger means two things writing scrollY on the same
+ * frames; routing it through GSAP puts both on one ticker.
  */
-gsap.registerPlugin(ScrollTrigger);
+gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
 
 export { gsap, ScrollTrigger };
 
