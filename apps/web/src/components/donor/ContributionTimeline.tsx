@@ -1,4 +1,6 @@
-import { Download } from "lucide-react";
+import { useEffect, useId, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import { ChevronDown, Download } from "lucide-react";
 import { formatMoney } from "@impactbridge/shared";
 import type { Donation, DonationListResponse } from "@impactbridge/shared";
 import { openReceipt } from "@/lib/receipt";
@@ -103,6 +105,195 @@ function groupByMonth(
 }
 
 /**
+ * One contribution, with everything the API actually knows about it.
+ *
+ * The row already carried organisation, date, status, receipt number and
+ * amount, so a detail view repeating those would be motion for its own sake.
+ * It does not repeat them: `message`, `anonymous` and `completedAt` are all
+ * returned by `/donations` and shown nowhere else on this dashboard. A note is
+ * the most personal thing in the whole record, which makes hiding it the odd
+ * choice — 352 of the 559 seeded contributions carry one.
+ *
+ * Expansion rather than a drawer or a dialog. A donor opening a contribution is
+ * checking one line against the rest of its month; a panel that covers the list
+ * removes the context they opened it from, and a modal adds a focus trap and a
+ * dismissal to a disclosure that needs neither.
+ *
+ * The disclosure is the left cell only, not the whole row. Making the row a
+ * button would nest the receipt download inside it, which is invalid HTML and
+ * leaves that control unreachable by keyboard.
+ */
+function ContributionRow({
+  donation,
+  expanded,
+  onToggle,
+}: {
+  donation: Donation;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  const panelId = useId();
+  const buttonId = useId();
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [contentHeight, setContentHeight] = useState(0);
+
+  /*
+   * Measured height, not `grid-template-rows: 0fr/1fr`. Same reasoning the FAQ
+   * records: where the tidier version is unsupported it does not degrade to an
+   * instant open, it degrades to no open at all.
+   */
+  useEffect(() => {
+    const el = contentRef.current;
+    if (!el) return;
+    const measure = () => setContentHeight(el.scrollHeight);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const stamp = (iso: string) =>
+    new Date(iso).toLocaleString("en-IN", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+
+  return (
+    <li>
+      <div className="group grid grid-cols-[1fr_auto] items-baseline gap-x-6 gap-y-1 border-b border-border/60 py-4 transition-colors duration-200 hover:bg-secondary/40 sm:grid-cols-[1fr_auto_auto]">
+        <button
+          id={buttonId}
+          type="button"
+          onClick={onToggle}
+          aria-expanded={expanded}
+          aria-controls={panelId}
+          className="min-w-0 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <span className="flex items-center gap-2">
+            <span className="truncate text-sm font-semibold text-foreground transition-colors duration-200 group-hover:text-primary">
+              {donation.organization.name}
+            </span>
+            <ChevronDown
+              aria-hidden="true"
+              className={cn(
+                "h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform duration-300 ease-out-soft motion-reduce:transition-none",
+                expanded && "rotate-180",
+              )}
+            />
+          </span>
+          <span className="mt-1 block text-xs text-muted-foreground">
+            <time dateTime={donation.createdAt}>
+              {new Date(donation.createdAt).toLocaleDateString("en-IN", {
+                day: "numeric",
+                month: "short",
+              })}
+            </time>
+            <span className={cn("ml-2", STATUS_TONE[donation.status])}>
+              {STATUS_LABEL[donation.status] ?? donation.status}
+            </span>
+            {donation.receiptNumber ? (
+              <span className="ml-2 tnum">{donation.receiptNumber}</span>
+            ) : null}
+          </span>
+        </button>
+
+        <p className="tnum text-right text-sm font-semibold text-foreground sm:text-base">
+          {formatMoney(donation.amountMinor, donation.currency)}
+        </p>
+
+        <div className="col-start-2 row-start-1 justify-self-end sm:col-start-3">
+          {donation.status === "SUCCEEDED" ? (
+            <button
+              type="button"
+              onClick={() => void openReceipt(donation.id)}
+              aria-label={`Download receipt for ${donation.organization.name}`}
+              className="rounded-lg p-2 text-muted-foreground opacity-60 transition-all duration-200 ease-out-soft hover:bg-secondary hover:text-foreground group-hover:opacity-100 active:scale-90"
+            >
+              <Download className="h-4 w-4" />
+            </button>
+          ) : (
+            <span className="block h-8 w-8" aria-hidden="true" />
+          )}
+        </div>
+      </div>
+
+      <div
+        id={panelId}
+        role="region"
+        aria-labelledby={buttonId}
+        aria-hidden={!expanded}
+        style={{ height: expanded ? contentHeight : 0 }}
+        className="overflow-hidden border-b border-border/60 transition-[height] duration-300 ease-out-soft motion-reduce:transition-none"
+      >
+        <div ref={contentRef}>
+          <dl className="grid gap-x-8 gap-y-4 py-5 pr-4 sm:grid-cols-2">
+            {donation.message ? (
+              <div className="sm:col-span-2">
+                <dt className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                  Your note
+                </dt>
+                <dd className="mt-2 max-w-prose text-sm leading-relaxed text-foreground">
+                  {donation.message}
+                </dd>
+              </div>
+            ) : null}
+
+            <div>
+              <dt className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                Given
+              </dt>
+              <dd className="tnum mt-1.5 text-sm text-foreground">
+                {stamp(donation.createdAt)}
+              </dd>
+            </div>
+
+            {donation.completedAt ? (
+              <div>
+                <dt className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                  Confirmed
+                </dt>
+                <dd className="tnum mt-1.5 text-sm text-foreground">
+                  {stamp(donation.completedAt)}
+                </dd>
+              </div>
+            ) : null}
+
+            <div>
+              <dt className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                Attribution
+              </dt>
+              <dd className="mt-1.5 text-sm text-foreground">
+                {donation.anonymous
+                  ? "Given anonymously - your name is not shown publicly"
+                  : "Given in your name"}
+              </dd>
+            </div>
+
+            <div className="sm:col-span-2">
+              <Link
+                to={`/ngo/${donation.organization.slug}`}
+                className="group/link inline-flex items-center gap-2 text-sm font-semibold text-foreground transition-colors hover:text-primary"
+              >
+                View organisation
+                <span
+                  aria-hidden="true"
+                  className="transition-transform duration-200 ease-out-soft group-hover/link:translate-x-0.5"
+                >
+                  &rarr;
+                </span>
+              </Link>
+            </div>
+          </dl>
+        </div>
+      </div>
+    </li>
+  );
+}
+
+/**
  * The contribution record, as a timeline rather than twenty identical cards.
  *
  * Structure comes from the month headings and a single hairline rule per row —
@@ -121,6 +312,15 @@ export function ContributionTimeline({
   page: number;
   onPageChange: (page: number) => void;
 }) {
+  /*
+   * One at a time, unlike the FAQ two files over — and the difference is the
+   * reading task, not a change of mind. FAQ answers get compared against each
+   * other, so closing one to open another turns a comparison into a memory
+   * test. A contribution is inspected on its own: nobody reads two receipts
+   * side by side, and ten open panels turn a scannable record into a wall.
+   */
+  const [expanded, setExpanded] = useState<string | null>(null);
+
   if (isPending) {
     return (
       <section className="border-b border-border py-14">
@@ -175,60 +375,16 @@ export function ContributionTimeline({
 
             <ul>
               {group.items.map((donation) => (
-                <li key={donation.id}>
-                  {/*
-                    The row is a grid, not a flex run, so the amount column
-                    lines up down the whole month regardless of how long an
-                    organisation's name is — which is the entire point of
-                    setting a financial record in tabular figures.
-                  */}
-                  <div className="group grid grid-cols-[1fr_auto] items-baseline gap-x-6 gap-y-1 border-b border-border/60 py-4 transition-colors duration-200 hover:bg-secondary/40 sm:grid-cols-[1fr_auto_auto]">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-foreground transition-colors duration-200 group-hover:text-primary">
-                        {donation.organization.name}
-                      </p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        <time dateTime={donation.createdAt}>
-                          {new Date(donation.createdAt).toLocaleDateString("en-IN", {
-                            day: "numeric",
-                            month: "short",
-                          })}
-                        </time>
-                        <span className={cn("ml-2", STATUS_TONE[donation.status])}>
-                          {STATUS_LABEL[donation.status] ?? donation.status}
-                        </span>
-                        {donation.receiptNumber ? (
-                          <span className="ml-2 tnum">{donation.receiptNumber}</span>
-                        ) : null}
-                      </p>
-                    </div>
-
-                    <p className="tnum text-right text-sm font-semibold text-foreground sm:text-base">
-                      {formatMoney(donation.amountMinor, donation.currency)}
-                    </p>
-
-                    {/*
-                      The receipt is always in the layout when it exists, never
-                      revealed only on hover: a control that appears on hover is
-                      unreachable by touch, and this one is the document a donor
-                      needs at tax time. Hover only raises its contrast.
-                    */}
-                    <div className="col-start-2 row-start-1 justify-self-end sm:col-start-3">
-                      {donation.status === "SUCCEEDED" ? (
-                        <button
-                          type="button"
-                          onClick={() => void openReceipt(donation.id)}
-                          aria-label={`Download receipt for ${donation.organization.name}`}
-                          className="rounded-lg p-2 text-muted-foreground opacity-60 transition-all duration-200 ease-out-soft hover:bg-secondary hover:text-foreground group-hover:opacity-100 active:scale-90"
-                        >
-                          <Download className="h-4 w-4" />
-                        </button>
-                      ) : (
-                        <span className="block h-8 w-8" aria-hidden="true" />
-                      )}
-                    </div>
-                  </div>
-                </li>
+                <ContributionRow
+                  key={donation.id}
+                  donation={donation}
+                  expanded={expanded === donation.id}
+                  onToggle={() =>
+                    setExpanded((current) =>
+                      current === donation.id ? null : donation.id,
+                    )
+                  }
+                />
               ))}
             </ul>
           </div>
