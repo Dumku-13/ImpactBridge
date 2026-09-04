@@ -114,7 +114,21 @@ function FaqEntry({ item }: { item: FaqItem }) {
   }, []);
 
   return (
-    <div className="border-b border-border">
+    <div className="relative border-b border-border">
+      {/*
+        The open item marks itself in the gutter. `-left-4` puts the rule inside
+        the section's own padding rather than indenting the text, so opening an
+        answer moves nothing on the page — an accordion that shifts its own
+        question sideways as you click it is disorienting at exactly the moment
+        the reader is trying to follow a line.
+      */}
+      <span
+        aria-hidden="true"
+        className={cn(
+          "absolute -left-4 top-0 h-full w-px origin-top bg-accent transition-transform duration-300 ease-out-soft motion-reduce:transition-none",
+          open ? "scale-y-100" : "scale-y-0",
+        )}
+      />
       <h3>
         <button
           id={buttonId}
@@ -124,7 +138,12 @@ function FaqEntry({ item }: { item: FaqItem }) {
           aria-controls={panelId}
           className="flex w-full items-center justify-between gap-4 py-5 text-left transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
-          <span className="font-display text-lg font-semibold tracking-tight text-foreground">
+          <span
+            className={cn(
+              "font-display text-lg font-semibold tracking-tight transition-colors duration-300",
+              open ? "text-accent" : "text-foreground",
+            )}
+          >
             {item.question}
           </span>
           <ChevronDown
@@ -158,7 +177,19 @@ function FaqEntry({ item }: { item: FaqItem }) {
         className="overflow-hidden transition-[height] duration-300 ease-out-soft motion-reduce:transition-none"
       >
         <div ref={contentRef}>
-          <p className="pb-5 pr-8 text-sm leading-relaxed text-muted-foreground">
+          {/*
+            Fading and rising slightly BEHIND the height, not with it. A panel
+            whose text is already at full opacity while the box is still opening
+            reads as the answer being pushed out of the way by its own
+            container; a short delay lets the room appear first and the answer
+            arrive into it.
+          */}
+          <p
+            className={cn(
+              "pb-5 pr-8 text-sm leading-relaxed text-muted-foreground transition-[opacity,transform] duration-300 ease-out-soft motion-reduce:transition-none",
+              open ? "translate-y-0 opacity-100 delay-100" : "-translate-y-1 opacity-0",
+            )}
+          >
             {item.answer}
           </p>
         </div>

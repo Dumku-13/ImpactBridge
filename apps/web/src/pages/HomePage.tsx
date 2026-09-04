@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, Building2, HandCoins, Heart } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { ROLE_LABELS } from "@impactbridge/shared";
 import { useAuth } from "@/auth/AuthContext";
 import { homeForRole } from "@/auth/routes";
@@ -12,6 +12,7 @@ import { FundingFlow } from "@/components/home/FundingFlow";
 import { StoryRail } from "@/components/home/StoryRail";
 import { StatBand } from "@/components/home/StatBand";
 import { Causes } from "@/components/home/Causes";
+import { Audiences } from "@/components/home/Audiences";
 import { Closing } from "@/components/home/Closing";
 import { Faq } from "@/components/site/Faq";
 import { SiteFooter } from "@/components/layout/SiteFooter";
@@ -45,23 +46,6 @@ const SPINE = [
  */
 const SPINE_SECTIONS: Array<{ id: string; label: string }> = [...SPINE];
 
-const AUDIENCES = [
-  {
-    icon: Heart,
-    title: "For donors",
-    body: "Find verified nonprofits working on causes you care about, give securely, and see exactly where your money goes.",
-  },
-  {
-    icon: Building2,
-    title: "For nonprofits",
-    body: "Build a credible public profile, receive donations, apply for grants, and report your impact in one place.",
-  },
-  {
-    icon: HandCoins,
-    title: "For funders",
-    body: "Publish grant opportunities, review and compare applicants side by side, and track how funds are used.",
-  },
-];
 
 export function HomePage() {
   useDocumentTitle("ImpactBridge");
@@ -165,26 +149,7 @@ export function HomePage() {
         </div>
 
 
-        <section className="border-t border-border bg-card/60">
-          <div className="stagger mx-auto grid max-w-6xl gap-6 px-6 py-20 md:grid-cols-3">
-            {AUDIENCES.map(({ icon: Icon, title, body }) => (
-              <div
-                key={title}
-                className="group rounded-xl border border-border bg-card p-6 shadow-subtle transition-all duration-300 ease-out-soft hover:-translate-y-1 hover:border-primary/25 hover:shadow-lifted"
-              >
-                <div className="mb-5 inline-flex rounded-lg bg-primary/10 p-3 ring-1 ring-inset ring-primary/15 transition-colors duration-300 group-hover:bg-primary/15">
-                  <Icon className="h-5 w-5 text-primary" />
-                </div>
-                <h2 className="font-display text-xl font-semibold text-foreground">
-                  {title}
-                </h2>
-                <p className="mt-2.5 text-sm leading-relaxed text-muted-foreground">
-                  {body}
-                </p>
-              </div>
-            ))}
-          </div>
-        </section>
+        <Audiences />
 
         {/*
           Last section before the footer, and deliberately so: by this point the

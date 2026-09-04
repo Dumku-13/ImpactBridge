@@ -1,4 +1,6 @@
+import { useEffect, useRef } from "react";
 import { editorial } from "@/content/media";
+import { gsap, prefersReducedMotion } from "@/lib/gsap";
 import { Reveal } from "@/components/ui/Reveal";
 
 /**
@@ -10,8 +12,46 @@ import { Reveal } from "@/components/ui/Reveal";
  * single photograph — no cards, no icons, no three-column feature grid.
  */
 export function Premise() {
+  const mediaRef = useRef<HTMLDivElement>(null);
+  const sectionRef = useRef<HTMLElement>(null);
+
+  /*
+   * The photograph grows slowly as the section crosses the viewport while the
+   * type stays where it is, so the two read as one composition with depth
+   * rather than two blocks scrolling at the same speed.
+   *
+   * Scrubbed, not triggered: a fixed-duration reveal fires once and is over,
+   * and what makes this feel like depth is that it tracks the reader's own
+   * movement the whole way through. Transform only, so it composites.
+   */
+  useEffect(() => {
+    const node = mediaRef.current;
+    const section = sectionRef.current;
+    if (!node || !section || prefersReducedMotion()) return;
+
+    const ctx = gsap.context(() => {
+      gsap.fromTo(
+        node,
+        { scale: 1, yPercent: 3 },
+        {
+          scale: 1.08,
+          yPercent: -3,
+          ease: "none",
+          scrollTrigger: {
+            trigger: section,
+            start: "top bottom",
+            end: "bottom top",
+            scrub: 0.5,
+          },
+        },
+      );
+    }, section);
+
+    return () => ctx.revert();
+  }, []);
+
   return (
-    <section className="relative bg-background py-20 sm:py-24">
+    <section ref={sectionRef} className="relative bg-background py-20 sm:py-24">
       {/* `relative z-10`: the page thread is drawn at z-5, above section
           backgrounds and below every block of copy. Without this the line
           crosses the text instead of passing behind it. */}
@@ -59,14 +99,16 @@ export function Premise() {
             */}
             <figure className="relative">
               <div className="aspect-[16/10] overflow-hidden rounded-sm bg-secondary">
-                <img
-                  src={editorial.ngoCommunity.src}
-                  alt={editorial.ngoCommunity.alt}
-                  width={1200}
-                  height={658}
-                  loading="lazy"
-                  className="h-full w-full object-cover"
-                />
+                <div ref={mediaRef} className="h-full w-full will-change-transform">
+                  <img
+                    src={editorial.ngoCommunity.src}
+                    alt={editorial.ngoCommunity.alt}
+                    width={1200}
+                    height={658}
+                    loading="lazy"
+                    className="h-full w-full object-cover"
+                  />
+                </div>
               </div>
               <figcaption className="mt-3 text-xs leading-relaxed text-muted-foreground">
                 Fieldworkers meeting a community — the last mile that funding is
