@@ -90,6 +90,7 @@ function CausePanel({
     <Reveal delay={delay} className={className}>
       <Link
         to={`/browse?category=${cause.slug}`}
+        data-cursor-label="Explore"
         className="group block opacity-100 transition-opacity duration-300 ease-out-soft group-hover/causes:opacity-45 hover:!opacity-100"
       >
         <div

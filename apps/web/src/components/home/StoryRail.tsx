@@ -123,6 +123,8 @@ function StoryCard({
 }) {
   return (
     <article
+      data-sr-card
+      data-cursor-label="View story"
       className="group shrink-0"
       style={{ width: `min(${WIDE_MAX}px, 78vw)` }}
     >
@@ -144,7 +146,7 @@ function StoryCard({
             border is `--ink` rather than `--background` so it stays the ground
             colour of this section in both themes. */}
         <div
-          className="absolute -bottom-6 right-4 w-[38%] overflow-hidden border-4 border-[hsl(var(--ink))] bg-[hsl(var(--olive))] shadow-lifted"
+          className="sr-plate absolute -bottom-6 right-4 w-[38%] overflow-hidden border-4 border-[hsl(var(--ink))] bg-[hsl(var(--olive))] shadow-lifted"
           style={{ maxWidth: PORTRAIT_MAX }}
         >
           <img
@@ -158,7 +160,7 @@ function StoryCard({
         </div>
 
         <span
-          className="tnum pointer-events-none absolute left-3 top-1 font-grotesk text-6xl font-extrabold leading-none text-[hsl(var(--paper))] mix-blend-difference"
+          className="sr-numeral tnum pointer-events-none absolute left-3 top-1 font-grotesk text-6xl font-extrabold leading-none text-[hsl(var(--paper))] mix-blend-difference"
           style={{ fontStretch: "82%" }}
         >
           {String(index + 1).padStart(2, "0")}
@@ -231,7 +233,42 @@ export function StoryRail() {
       });
     }, section);
 
+    /*
+     * ── Depth ───────────────────────────────────────────────────────────────
+     *
+     * Each card carries `--sr-d`: how far its centre sits from the centre of
+     * the rail, in units of half a viewport. The portrait plate and the numeral
+     * read that value and translate by different amounts in opposite
+     * directions, so the three layers of a card separate as it crosses the
+     * screen — which is what reads as depth. The wide photograph itself never
+     * moves; something has to be the ground or the whole card just slides.
+     *
+     * Written on the rail's own `scroll` event rather than the page's, because
+     * this rail moves for two reasons — the scroll-driven travel above and a
+     * visitor dragging it — and only the element itself sees both.
+     */
+    let depthFrame = 0;
+    const writeDepth = () => {
+      depthFrame = 0;
+      const mid = rail.clientWidth / 2;
+      for (const card of rail.querySelectorAll<HTMLElement>("[data-sr-card]")) {
+        const box = card.getBoundingClientRect();
+        const railBox = rail.getBoundingClientRect();
+        const centre = box.left - railBox.left + box.width / 2;
+        card.style.setProperty("--sr-d", ((centre - mid) / mid).toFixed(3));
+      }
+    };
+    const onRailScroll = () => {
+      if (depthFrame) return;
+      depthFrame = requestAnimationFrame(writeDepth);
+    };
+
+    rail.addEventListener("scroll", onRailScroll, { passive: true });
+    writeDepth();
+
     return () => {
+      if (depthFrame) cancelAnimationFrame(depthFrame);
+      rail.removeEventListener("scroll", onRailScroll);
       rail.removeEventListener("pointerdown", holdManually);
       rail.removeEventListener("touchstart", holdManually);
       rail.removeEventListener("keydown", holdManually);

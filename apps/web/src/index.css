@@ -521,6 +521,37 @@
    */
 
   /*
+   * Story-card depth. `--sr-d` is written per card by StoryRail: 0 at the
+   * centre of the rail, ±1 at its edges. The two upper layers move by
+   * different amounts in OPPOSITE directions while the wide photograph stays
+   * put, which is what separates them into planes. Small numbers on purpose —
+   * past about 20px this stops reading as depth and starts reading as a card
+   * coming apart.
+   *
+   * Hence the clamp, which is not decoration. `--sr-d` is only ±1 for a card at
+   * the edge of the RAIL; the rail is far wider than its own viewport, so a
+   * card queued off to one side measures well past that — 3.6 was the worst
+   * observed, which drove the plate 51px sideways and pulled the card visibly
+   * apart. Clamping caps the separation at the 14px and 9px this was designed
+   * around, and the layers simply hold their offset once a card is off screen,
+   * where nobody is looking anyway.
+   */
+  .sr-plate {
+    transform: translate3d(calc(clamp(-1, var(--sr-d, 0), 1) * 14px), 0, 0);
+  }
+
+  .sr-numeral {
+    transform: translate3d(calc(clamp(-1, var(--sr-d, 0), 1) * -9px), 0, 0);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sr-plate,
+    .sr-numeral {
+      transform: none;
+    }
+  }
+
+  /*
    * ── The funding journey scene ───────────────────────────────────────────
    *
    * Six stages crossed by one number. `--fj-p` runs 0 → 1 across the whole

@@ -6,6 +6,7 @@ import { homeForRole } from "@/auth/routes";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { Opening } from "@/components/home/Opening";
 import { ScrollSpine } from "@/components/home/ScrollSpine";
+import { CursorLabel } from "@/components/ui/CursorLabel";
 import { PageThread } from "@/components/home/PageThread";
 import { Premise } from "@/components/home/Premise";
 import { FundingFlow } from "@/components/home/FundingFlow";
@@ -114,6 +115,7 @@ export function HomePage() {
       </header>
 
       <ScrollSpine sections={SPINE_SECTIONS} />
+      <CursorLabel />
 
       {/*
         `relative` so the thread can span exactly this box — the whole run of
